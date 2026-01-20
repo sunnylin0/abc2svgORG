@@ -36,7 +36,7 @@ deco.js: 裝飾音處理
 draw.js: 繪圖邏輯
 format.js: 格式化函數
 front.js: ABC 解析前端介面
-music.js: 音樂成邏輯
+music.js: 音樂生成邏輯
 parse.js: ABC 解析器 (核心)
 subs.js: 文字輸出
 svg.js: SVG 生成
@@ -45,6 +45,7 @@ lyrics.js: 歌詞
 gchord.js: 和弦符號
 tail.js: 函式尾部處理
 modules.js: 模組處理
+jianpu.js: 簡譜邏輯
 
 
 重構計畫 (Module Pattern)： 為了滿足您 "拆分成 10 幾個 class" 的要求，並保持代碼可維護性，我將採取以下架構：
@@ -69,3 +70,28 @@ modules/Jianpu.ts (來自 modules/jianpu.js)：實現簡譜邏輯。
 整合方式：
 Jianpu 模組將實現一個 hook(abc: Abc) 方法，用於動態替換/擴展 Abc 實例的方法 (如 draw_symbols)，保持原有的 hook 機制但適配 TypeScript 類型系統。
 Abc 初始化時將包含或調用 Modules 來處理 %%jianpu 指令。
+
+總是使用繁體中文回答說明
+===============
+# 以下為模組化重構的分析與規劃：
+目前的 Abc 類別過於龐大，包含了所有邏輯。
+請通過分析原始代碼結構，
+已將所有屬性和方法映射回它們原本所屬的模組(typescript class) *.ts：
+
+abc2svg: 核心定義與常數
+deco: 裝飾音處理
+draw: 繪圖邏輯
+format: 格式化函數
+front: ABC 解析前端介面
+music: 音樂生成邏輯
+parse: ABC 解析器 (核心)
+subs: 文字輸出
+svg: SVG 生成
+tune: 曲調處理
+lyrics: 歌詞
+gchord: 和弦符號
+tail: 函式別名處理 (Function alias handling)
+
+------- 另外的模組
+modules: 模組處理
+jianpu: 簡譜邏輯
