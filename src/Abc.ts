@@ -11,7 +11,7 @@ import { Gchord } from './modules/Gchord';
 import { Midi } from '../other/Midi';
 import * as abc2svg from './abc2svg';
 
-export class Abc {
+class Abc {
     user: any;
 
     // Core state (mapped from original glovar/info)
@@ -416,3 +416,6 @@ export class ScanBuf {
         return val;
     }
 }
+const error = Abc.error;
+const clone = Abc.clone;
+export { Abc, error, clone }

@@ -1,5 +1,5 @@
 // abc2svg - Tune module
-import { Abc } from '../Abc';
+import type { Abc } from '../Abc';
 import * as abc2svg from '../abc2svg';
 
 export class Tune {

@@ -1,5 +1,5 @@
-// abc2svg - Lyrics module
-import { Abc } from '../Abc';
+﻿// abc2svg - Lyrics module
+import type { Abc } from '../Abc';
 import * as abc2svg from '../abc2svg';
 
 export class Music {
