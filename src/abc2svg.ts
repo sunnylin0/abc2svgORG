@@ -1,6 +1,9 @@
 // abc2svg - Core definitions and constants
 // Ported from abc2svg-1.js
 
+export const version = "v1.22.35";
+export const vdate = "2025-12-29";
+
 export const C = {
     BLEN: 1536,
 
