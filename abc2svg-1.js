@@ -40,6 +40,31 @@ abc2svg.version = "v1.22.35"; abc2svg.vdate = "2025-12-29"
 // along with abc2svg-core.  If not, see <http://www.gnu.org/licenses/>.
 
 // define the abc2svg object is not yet done
+//                   bbbbbbbb
+//                   b::::::b                                 222222222222222
+//                   b::::::b                                2:::::::::::::::22
+//                   b::::::b                                2::::::222222:::::2
+//                    b:::::b                                2222222     2:::::2
+//   aaaaaaaaaaaaa    b:::::bbbbbbbbb        cccccccccccccccc            2:::::2     ssssssssss   vvvvvvv           vvvvvvv   ggggggggg   ggggg
+//   a::::::::::::a   b::::::::::::::bb    cc:::::::::::::::c            2:::::2   ss::::::::::s   v:::::v         v:::::v   g:::::::::ggg::::g
+//   aaaaaaaaa:::::a  b::::::::::::::::b  c:::::::::::::::::c         2222::::2  ss:::::::::::::s   v:::::v       v:::::v   g:::::::::::::::::g
+//            a::::a  b:::::bbbbb:::::::bc:::::::cccccc:::::c    22222::::::22   s::::::ssss:::::s   v:::::v     v:::::v   g::::::ggggg::::::gg
+//     aaaaaaa:::::a  b:::::b    b::::::bc::::::c     ccccccc  22::::::::222      s:::::s  ssssss     v:::::v   v:::::v    g:::::g     g:::::g
+//   aa::::::::::::a  b:::::b     b:::::bc:::::c              2:::::22222           s::::::s           v:::::v v:::::v     g:::::g     g:::::g
+//  a::::aaaa::::::a  b:::::b     b:::::bc:::::c             2:::::2                   s::::::s         v:::::v:::::v      g:::::g     g:::::g
+// a::::a    a:::::a  b:::::b     b:::::bc::::::c     ccccccc2:::::2             ssssss   s:::::s        v:::::::::v       g::::::g    g:::::g
+// a::::a    a:::::a  b:::::bbbbbb::::::bc:::::::cccccc:::::c2:::::2       222222s:::::ssss::::::s        v:::::::v        g:::::::ggggg:::::g
+// a:::::aaaa::::::a  b::::::::::::::::b  c:::::::::::::::::c2::::::2222222:::::2s::::::::::::::s          v:::::v          g::::::::::::::::g
+//  a::::::::::aa:::a b:::::::::::::::b    cc:::::::::::::::c2::::::::::::::::::2 s:::::::::::ss            v:::v            gg::::::::::::::g
+//   aaaaaaaaaa  aaaa bbbbbbbbbbbbbbbb       cccccccccccccccc22222222222222222222  sssssssssss               vvv               gggggggg::::::g
+//                                                                                                                                     g:::::g
+//                                                                                                                         gggggg      g:::::g
+//                                                                                                                         g:::::gg   gg:::::g
+//                                                                                                                          g::::::ggg:::::::g
+//                                                                                                                           gg:::::::::::::g
+//                                                                                                                             ggg::::::ggg
+//                                                                                                                                gggggg
+
 if (typeof abc2svg == "undefined")
     var abc2svg = {};
 
@@ -465,6 +490,30 @@ abc2svg.Abc = function (user) {
     //
     // You should have received a copy of the GNU Lesser General Public License
     // along with abc2svg-core.  If not, see <http://www.gnu.org/licenses/>.
+    //             dddddddd
+    //             d::::::d
+    //             d::::::d
+    //             d::::::d
+    //             d:::::d
+    //     ddddddddd:::::d     eeeeeeeeeeee        cccccccccccccccc   ooooooooooo
+    //   dd::::::::::::::d   ee::::::::::::ee    cc:::::::::::::::c oo:::::::::::oo
+    //  d::::::::::::::::d  e::::::eeeee:::::ee c:::::::::::::::::co:::::::::::::::o
+    // d:::::::ddddd:::::d e::::::e     e:::::ec:::::::cccccc:::::co:::::ooooo:::::o
+    // d::::::d    d:::::d e:::::::eeeee::::::ec::::::c     ccccccco::::o     o::::o
+    // d:::::d     d:::::d e:::::::::::::::::e c:::::c             o::::o     o::::o
+    // d:::::d     d:::::d e::::::eeeeeeeeeee  c:::::c             o::::o     o::::o
+    // d:::::d     d:::::d e:::::::e           c::::::c     ccccccco::::o     o::::o
+    // d::::::ddddd::::::dde::::::::e          c:::::::cccccc:::::co:::::ooooo:::::o
+    //  d:::::::::::::::::d e::::::::eeeeeeee   c:::::::::::::::::co:::::::::::::::o
+    //   d:::::::::ddd::::d  ee:::::::::::::e    cc:::::::::::::::c oo:::::::::::oo
+    //    ddddddddd   ddddd    eeeeeeeeeeeeee      cccccccccccccccc   ooooooooooo
+
+
+
+
+
+
+
 
     // Decoration objects
     // dd {			// decoration definition (static)
@@ -2610,6 +2659,23 @@ abc2svg.Abc = function (user) {
             }
         }
     }
+    //             dddddddd
+    //             d::::::d
+    //             d::::::d
+    //             d::::::d
+    //             d:::::d
+    //     ddddddddd:::::d rrrrr   rrrrrrrrr     aaaaaaaaaaaaa   wwwwwww           wwwww           wwwwwww
+    //   dd::::::::::::::d r::::rrr:::::::::r    a::::::::::::a   w:::::w         w:::::w         w:::::w
+    //  d::::::::::::::::d r:::::::::::::::::r   aaaaaaaaa:::::a   w:::::w       w:::::::w       w:::::w
+    // d:::::::ddddd:::::d rr::::::rrrrr::::::r           a::::a    w:::::w     w:::::::::w     w:::::w
+    // d::::::d    d:::::d  r:::::r     r:::::r    aaaaaaa:::::a     w:::::w   w:::::w:::::w   w:::::w
+    // d:::::d     d:::::d  r:::::r     rrrrrrr  aa::::::::::::a      w:::::w w:::::w w:::::w w:::::w
+    // d:::::d     d:::::d  r:::::r             a::::aaaa::::::a       w:::::w:::::w   w:::::w:::::w
+    // d:::::d     d:::::d  r:::::r            a::::a    a:::::a        w:::::::::w     w:::::::::w
+    // d::::::ddddd::::::dd r:::::r            a::::a    a:::::a         w:::::::w       w:::::::w
+    //  d:::::::::::::::::d r:::::r            a:::::aaaa::::::a          w:::::w         w:::::w
+    //   d:::::::::ddd::::d r:::::r             a::::::::::aa:::a          w:::w           w:::w
+    //    ddddddddd   ddddd rrrrrrr              aaaaaaaaaa  aaaa           www             www
 
     // abc2svg - draw.js - draw functions
     //
@@ -6967,6 +7033,23 @@ bmlFQ0I3AAAAAAH//wACAAEAAAAAAAAADAAUAAQAAAACAAAAAQAAAAEAAAAAAAEAAAAA44To7gAA\
 AADRlyIXAAAAAOPSSjM=\
 ") format("truetype")';
 
+    //    ffffffffffffffff                                                                                          tttt
+    //   f::::::::::::::::f                                                                                      ttt:::t
+    //  f::::::::::::::::::f                                                                                     t:::::t
+    //  f::::::fffffff:::::f                                                                                     t:::::t
+    //  f:::::f       ffffff   ooooooooooo   rrrrr   rrrrrrrrr      mmmmmmm    mmmmmmm     aaaaaaaaaaaaa   ttttttt:::::ttttttt
+    //  f:::::f              oo:::::::::::oo r::::rrr:::::::::r   mm:::::::m  m:::::::mm   a::::::::::::a  t:::::::::::::::::t
+    // f:::::::ffffff       o:::::::::::::::or:::::::::::::::::r m::::::::::mm::::::::::m  aaaaaaaaa:::::a t:::::::::::::::::t
+    // f::::::::::::f       o:::::ooooo:::::orr::::::rrrrr::::::rm::::::::::::::::::::::m           a::::a tttttt:::::::tttttt
+    // f::::::::::::f       o::::o     o::::o r:::::r     r:::::rm:::::mmm::::::mmm:::::m    aaaaaaa:::::a       t:::::t
+    // f:::::::ffffff       o::::o     o::::o r:::::r     rrrrrrrm::::m   m::::m   m::::m  aa::::::::::::a       t:::::t
+    //  f:::::f             o::::o     o::::o r:::::r            m::::m   m::::m   m::::m a::::aaaa::::::a       t:::::t
+    //  f:::::f             o::::o     o::::o r:::::r            m::::m   m::::m   m::::ma::::a    a:::::a       t:::::t    tttttt
+    // f:::::::f            o:::::ooooo:::::o r:::::r            m::::m   m::::m   m::::ma::::a    a:::::a       t::::::tttt:::::t
+    // f:::::::f            o:::::::::::::::o r:::::r            m::::m   m::::m   m::::ma:::::aaaa::::::a       tt::::::::::::::t
+    // f:::::::f             oo:::::::::::oo  r:::::r            m::::m   m::::m   m::::m a::::::::::aa:::a        tt:::::::::::tt
+    // fffffffff               ooooooooooo    rrrrrrr            mmmmmm   mmmmmm   mmmmmm  aaaaaaaaaa  aaaa          ttttttttttt
+
     // abc2svg - format.js - formatting functions
     //
     // Copyright (C) 2014-2025 Jean-Francois Moine
@@ -7956,6 +8039,23 @@ H "History: "',
         return font
     }
 
+    //    ffffffffffffffff                                                                  tttt
+    //   f::::::::::::::::f                                                              ttt:::t
+    //  f::::::::::::::::::f                                                             t:::::t
+    //  f::::::fffffff:::::f                                                             t:::::t
+    //  f:::::f       ffffffrrrrr   rrrrrrrrr      ooooooooooo   nnnn  nnnnnnnn    ttttttt:::::ttttttt
+    //  f:::::f             r::::rrr:::::::::r   oo:::::::::::oo n:::nn::::::::nn  t:::::::::::::::::t
+    // f:::::::ffffff       r:::::::::::::::::r o:::::::::::::::on::::::::::::::nn t:::::::::::::::::t
+    // f::::::::::::f       rr::::::rrrrr::::::ro:::::ooooo:::::onn:::::::::::::::ntttttt:::::::tttttt
+    // f::::::::::::f        r:::::r     r:::::ro::::o     o::::o  n:::::nnnn:::::n      t:::::t
+    // f:::::::ffffff        r:::::r     rrrrrrro::::o     o::::o  n::::n    n::::n      t:::::t
+    //  f:::::f              r:::::r            o::::o     o::::o  n::::n    n::::n      t:::::t
+    //  f:::::f              r:::::r            o::::o     o::::o  n::::n    n::::n      t:::::t    tttttt
+    // f:::::::f             r:::::r            o:::::ooooo:::::o  n::::n    n::::n      t::::::tttt:::::t
+    // f:::::::f             r:::::r            o:::::::::::::::o  n::::n    n::::n      tt::::::::::::::t
+    // f:::::::f             r:::::r             oo:::::::::::oo   n::::n    n::::n        tt:::::::::::tt
+    // fffffffff             rrrrrrr               ooooooooooo     nnnnnn    nnnnnn          ttttttttttt
+
     // abc2svg - front.js - ABC parsing front-end
     //
     // Copyright (C) 2014-2025 Jean-Francois Moine
@@ -8780,6 +8880,23 @@ H "History: "',
         parse.state = 0
     }
     Abc.prototype.tosvg = tosvg
+
+    //                                                              iiii
+    //                                                             i::::i
+    //                                                              iiii
+
+    //    mmmmmmm    mmmmmmm   uuuuuu    uuuuuu      ssssssssss   iiiiiii     cccccccccccccccc
+    //  mm:::::::m  m:::::::mm u::::u    u::::u    ss::::::::::s  i:::::i   cc:::::::::::::::c
+    // m::::::::::mm::::::::::mu::::u    u::::u  ss:::::::::::::s  i::::i  c:::::::::::::::::c
+    // m::::::::::::::::::::::mu::::u    u::::u  s::::::ssss:::::s i::::i c:::::::cccccc:::::c
+    // m:::::mmm::::::mmm:::::mu::::u    u::::u   s:::::s  ssssss  i::::i c::::::c     ccccccc
+    // m::::m   m::::m   m::::mu::::u    u::::u     s::::::s       i::::i c:::::c
+    // m::::m   m::::m   m::::mu::::u    u::::u        s::::::s    i::::i c:::::c
+    // m::::m   m::::m   m::::mu:::::uuuu:::::u  ssssss   s:::::s  i::::i c::::::c     ccccccc
+    // m::::m   m::::m   m::::mu:::::::::::::::uus:::::ssss::::::si::::::ic:::::::cccccc:::::c
+    // m::::m   m::::m   m::::m u:::::::::::::::us::::::::::::::s i::::::i c:::::::::::::::::c
+    // m::::m   m::::m   m::::m  uu::::::::uu:::u s:::::::::::ss  i::::::i  cc:::::::::::::::c
+    // mmmmmm   mmmmmm   mmmmmm    uuuuuuuu  uuuu  sssssssssss    iiiiiiii    cccccccccccccccc
 
     // abc2svg - music.js - music generation
     //
@@ -14293,6 +14410,25 @@ H "History: "',
         ts1st.p_v.meter = meter1
     }
 
+    // ppppp   ppppppppp     aaaaaaaaaaaaa   rrrrr   rrrrrrrrr       ssssssssss       eeeeeeeeeeee
+    // p::::ppp:::::::::p    a::::::::::::a  r::::rrr:::::::::r    ss::::::::::s    ee::::::::::::ee
+    // p:::::::::::::::::p   aaaaaaaaa:::::a r:::::::::::::::::r ss:::::::::::::s  e::::::eeeee:::::ee
+    // pp::::::ppppp::::::p           a::::a rr::::::rrrrr::::::rs::::::ssss:::::se::::::e     e:::::e
+    //  p:::::p     p:::::p    aaaaaaa:::::a  r:::::r     r:::::r s:::::s  ssssss e:::::::eeeee::::::e
+    //  p:::::p     p:::::p  aa::::::::::::a  r:::::r     rrrrrrr   s::::::s      e:::::::::::::::::e
+    //  p:::::p     p:::::p a::::aaaa::::::a  r:::::r                  s::::::s   e::::::eeeeeeeeeee
+    //  p:::::p    p::::::pa::::a    a:::::a  r:::::r            ssssss   s:::::s e:::::::e
+    //  p:::::ppppp:::::::pa::::a    a:::::a  r:::::r            s:::::ssss::::::se::::::::e
+    //  p::::::::::::::::p a:::::aaaa::::::a  r:::::r            s::::::::::::::s  e::::::::eeeeeeee
+    //  p::::::::::::::pp   a::::::::::aa:::a r:::::r             s:::::::::::ss    ee:::::::::::::e
+    //  p::::::pppppppp      aaaaaaaaaa  aaaa rrrrrrr              sssssssssss        eeeeeeeeeeeeee
+    //  p:::::p
+    //  p:::::p
+    // p:::::::p
+    // p:::::::p
+    // p:::::::p
+    // ppppppppp
+
     // abc2svg - parse.js - ABC parse
     //
     // Copyright (C) 2014-2026 Jean-Francois Moine
@@ -17389,7 +17525,23 @@ H "History: "',
         if (curvoice.eoln && cfmt.breakoneoln && curvoice.last_note)
             curvoice.last_note.beam_end = true
     }
-
+    //                                    bbbbbbbb
+    //                                    b::::::b
+    //                                    b::::::b
+    //                                    b::::::b
+    //                                     b:::::b
+    //     ssssssssss   uuuuuu    uuuuuu   b:::::bbbbbbbbb        ssssssssss
+    //   ss::::::::::s  u::::u    u::::u   b::::::::::::::bb    ss::::::::::s
+    // ss:::::::::::::s u::::u    u::::u   b::::::::::::::::b ss:::::::::::::s
+    // s::::::ssss:::::su::::u    u::::u   b:::::bbbbb:::::::bs::::::ssss:::::s
+    //  s:::::s  ssssss u::::u    u::::u   b:::::b    b::::::b s:::::s  ssssss
+    //    s::::::s      u::::u    u::::u   b:::::b     b:::::b   s::::::s
+    //       s::::::s   u::::u    u::::u   b:::::b     b:::::b      s::::::s
+    // ssssss   s:::::s u:::::uuuu:::::u   b:::::b     b:::::bssssss   s:::::s
+    // s:::::ssss::::::su:::::::::::::::uu b:::::bbbbbb::::::bs:::::ssss::::::s
+    // s::::::::::::::s  u:::::::::::::::u b::::::::::::::::b s::::::::::::::s
+    //  s:::::::::::ss    uu::::::::uu:::u b:::::::::::::::b   s:::::::::::ss
+    //   sssssssssss        uuuuuuuu  uuuu bbbbbbbbbbbbbbbb     sssssssssss
 
     // abc2svg - subs.js - text output
     //
@@ -18257,6 +18409,30 @@ H "History: "',
         vskip(cfmt.topspace)
         self.tunhd()
     } // write_heading()
+
+
+
+
+
+    //     ssssssssss   vvvvvvv           vvvvvvv   ggggggggg   ggggg
+    //   ss::::::::::s   v:::::v         v:::::v   g:::::::::ggg::::g
+    // ss:::::::::::::s   v:::::v       v:::::v   g:::::::::::::::::g
+    // s::::::ssss:::::s   v:::::v     v:::::v   g::::::ggggg::::::gg
+    //  s:::::s  ssssss     v:::::v   v:::::v    g:::::g     g:::::g
+    //    s::::::s           v:::::v v:::::v     g:::::g     g:::::g
+    //       s::::::s         v:::::v:::::v      g:::::g     g:::::g
+    // ssssss   s:::::s        v:::::::::v       g::::::g    g:::::g
+    // s:::::ssss::::::s        v:::::::v        g:::::::ggggg:::::g
+    // s::::::::::::::s          v:::::v          g::::::::::::::::g
+    //  s:::::::::::ss            v:::v            gg::::::::::::::g
+    //   sssssssssss               vvv               gggggggg::::::g
+    //                                                       g:::::g
+    //                                           gggggg      g:::::g
+    //                                           g:::::gg   gg:::::g
+    //                                            g::::::ggg:::::::g
+    //                                             gg:::::::::::::g
+    //                                               ggg::::::ggg
+    //                                                  gggggg
 
 
     // abc2svg - svg.js - svg functions
@@ -19684,6 +19860,24 @@ style="font:italic bold 12px text,serif">15\
         }
     }
     Abc.prototype.blk_flush = blk_flush;
+
+
+    //          tttt
+    //       ttt:::t
+    //       t:::::t
+    //       t:::::t
+    // ttttttt:::::ttttttt    uuuuuu    uuuuuu  nnnn  nnnnnnnn        eeeeeeeeeeee
+    // t:::::::::::::::::t    u::::u    u::::u  n:::nn::::::::nn    ee::::::::::::ee
+    // t:::::::::::::::::t    u::::u    u::::u  n::::::::::::::nn  e::::::eeeee:::::ee
+    // tttttt:::::::tttttt    u::::u    u::::u  nn:::::::::::::::ne::::::e     e:::::e
+    //       t:::::t          u::::u    u::::u    n:::::nnnn:::::ne:::::::eeeee::::::e
+    //       t:::::t          u::::u    u::::u    n::::n    n::::ne:::::::::::::::::e
+    //       t:::::t          u::::u    u::::u    n::::n    n::::ne::::::eeeeeeeeeee
+    //       t:::::t    ttttttu:::::uuuu:::::u    n::::n    n::::ne:::::::e
+    //       t::::::tttt:::::tu:::::::::::::::uu  n::::n    n::::ne::::::::e
+    //       tt::::::::::::::t u:::::::::::::::u  n::::n    n::::n e::::::::eeeeeeee
+    //         tt:::::::::::tt  uu::::::::uu:::u  n::::n    n::::n  ee:::::::::::::e
+    //           ttttttttttt      uuuuuuuu  uuuu  nnnnnn    nnnnnn    eeeeeeeeeeeeee
 
 
     // abc2svg - tune.js - tune generation
@@ -21988,6 +22182,28 @@ style="font:italic bold 12px text,serif">15\
         }
     }
 
+    // lllllll                                                iiii
+    // l:::::l                                               i::::i
+    // l:::::l                                                iiii
+    // l:::::l
+    //  l::::l yyyyyyy           yyyyyyyrrrrr   rrrrrrrrr   iiiiiii     cccccccccccccccc    ssssssssss
+    //  l::::l  y:::::y         y:::::y r::::rrr:::::::::r  i:::::i   cc:::::::::::::::c  ss::::::::::s
+    //  l::::l   y:::::y       y:::::y  r:::::::::::::::::r  i::::i  c:::::::::::::::::css:::::::::::::s
+    //  l::::l    y:::::y     y:::::y   rr::::::rrrrr::::::r i::::i c:::::::cccccc:::::cs::::::ssss:::::s
+    //  l::::l     y:::::y   y:::::y     r:::::r     r:::::r i::::i c::::::c     ccccccc s:::::s  ssssss
+    //  l::::l      y:::::y y:::::y      r:::::r     rrrrrrr i::::i c:::::c                s::::::s
+    //  l::::l       y:::::y:::::y       r:::::r             i::::i c:::::c                   s::::::s
+    //  l::::l        y:::::::::y        r:::::r             i::::i c::::::c     cccccccssssss   s:::::s
+    // l::::::l        y:::::::y         r:::::r            i::::::ic:::::::cccccc:::::cs:::::ssss::::::s
+    // l::::::l         y:::::y          r:::::r            i::::::i c:::::::::::::::::cs::::::::::::::s
+    // l::::::l        y:::::y           r:::::r            i::::::i  cc:::::::::::::::c s:::::::::::ss
+    // llllllll       y:::::y            rrrrrrr            iiiiiiii    cccccccccccccccc  sssssssssss
+    //               y:::::y
+    //              y:::::y
+    //             y:::::y
+    //            y:::::y
+    //           yyyyyyy
+
 
     // abc2svg - lyrics.js - lyrics
     //
@@ -22683,6 +22899,30 @@ style="font:italic bold 12px text,serif">15\
             }
         }
     }
+    //                                                                                                              dddddddd
+    //                                         hhhhhhh                                                              d::::::d
+    //                                         h:::::h                                                              d::::::d
+    //                                         h:::::h                                                              d::::::d
+    //                                         h:::::h                                                              d:::::d
+    //    ggggggggg   ggggg    cccccccccccccccc h::::h hhhhh          ooooooooooo   rrrrr   rrrrrrrrr       ddddddddd:::::d
+    //   g:::::::::ggg::::g  cc:::::::::::::::c h::::hh:::::hhh     oo:::::::::::oo r::::rrr:::::::::r    dd::::::::::::::d
+    //  g:::::::::::::::::g c:::::::::::::::::c h::::::::::::::hh  o:::::::::::::::or:::::::::::::::::r  d::::::::::::::::d
+    // g::::::ggggg::::::ggc:::::::cccccc:::::c h:::::::hhh::::::h o:::::ooooo:::::orr::::::rrrrr::::::rd:::::::ddddd:::::d
+    // g:::::g     g:::::g c::::::c     ccccccc h::::::h   h::::::ho::::o     o::::o r:::::r     r:::::rd::::::d    d:::::d
+    // g:::::g     g:::::g c:::::c              h:::::h     h:::::ho::::o     o::::o r:::::r     rrrrrrrd:::::d     d:::::d
+    // g:::::g     g:::::g c:::::c              h:::::h     h:::::ho::::o     o::::o r:::::r            d:::::d     d:::::d
+    // g::::::g    g:::::g c::::::c     ccccccc h:::::h     h:::::ho::::o     o::::o r:::::r            d:::::d     d:::::d
+    // g:::::::ggggg:::::g c:::::::cccccc:::::c h:::::h     h:::::ho:::::ooooo:::::o r:::::r            d::::::ddddd::::::dd
+    //  g::::::::::::::::g  c:::::::::::::::::c h:::::h     h:::::ho:::::::::::::::o r:::::r             d:::::::::::::::::d
+    //   gg::::::::::::::g   cc:::::::::::::::c h:::::h     h:::::h oo:::::::::::oo  r:::::r              d:::::::::ddd::::d
+    //     gggggggg::::::g     cccccccccccccccc hhhhhhh     hhhhhhh   ooooooooooo    rrrrrrr               ddddddddd   ddddd
+    //             g:::::g
+    // gggggg      g:::::g
+    // g:::::gg   gg:::::g
+    //  g::::::ggg:::::::g
+    //   gg:::::::::::::g
+    //     ggg::::::ggg
+    //        gggggg
 
 
     // abc2svg - gchord.js - chord symbols
@@ -23210,6 +23450,22 @@ style="font:italic bold 12px text,serif">15\
         }
     } // draw_all_chsy()
 
+    //          tttt                              iiii  lllllll
+    //       ttt:::t                             i::::i l:::::l
+    //       t:::::t                              iiii  l:::::l
+    //       t:::::t                                    l:::::l
+    // ttttttt:::::ttttttt      aaaaaaaaaaaaa   iiiiiii  l::::l
+    // t:::::::::::::::::t      a::::::::::::a  i:::::i  l::::l
+    // t:::::::::::::::::t      aaaaaaaaa:::::a  i::::i  l::::l
+    // tttttt:::::::tttttt               a::::a  i::::i  l::::l
+    //       t:::::t              aaaaaaa:::::a  i::::i  l::::l
+    //       t:::::t            aa::::::::::::a  i::::i  l::::l
+    //       t:::::t           a::::aaaa::::::a  i::::i  l::::l
+    //       t:::::t    tttttta::::a    a:::::a  i::::i  l::::l
+    //       t::::::tttt:::::ta::::a    a:::::a i::::::il::::::l
+    //       tt::::::::::::::ta:::::aaaa::::::a i::::::il::::::l
+    //         tt:::::::::::tt a::::::::::aa:::ai::::::il::::::l
+    //           ttttttttttt    aaaaaaaaaa  aaaaiiiiiiiillllllll
 
     // abc2svg - tail.js
     //
