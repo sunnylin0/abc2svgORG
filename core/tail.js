@@ -78,10 +78,10 @@ Abc.prototype.get_multi = function () {
   return multicol;
 };
 Abc.prototype.get_newpage = function () {
-  if (block.newpage) {
-    block.newpage = false;
+	if (block.newpage) {
+		block.newpage = false;
     return true;
-  }
+	}
 };
 Abc.prototype.get_parse = function () {
   return parse;
@@ -170,6 +170,6 @@ var Abc = abc2svg.Abc;
 
 // nodejs
 if (typeof module == 'object' && typeof exports == 'object') {
-  exports.abc2svg = abc2svg;
+	exports.abc2svg = abc2svg;
   exports.Abc = Abc;
 }
