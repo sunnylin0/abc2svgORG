@@ -10,5 +10,8 @@
   "license": "LGPL-3.0",
   "devDependencies": {
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "glob": "^13.0.0"
   }
 }
