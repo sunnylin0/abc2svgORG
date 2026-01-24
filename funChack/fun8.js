@@ -39,26 +39,26 @@ files.forEach(filePath => {
         if (char === '}') depth--;
 
         // 當處於全域範圍 (depth 0) 且遇到 var/let/const
-        if (depth === 0 && (content.substring(i, i+4) === 'var ' || content.substring(i, i+4) === 'let ' || content.substring(i, i+6) === 'const ')) {
+        if (depth === 0 && (content.substring(i, i + 4) === 'var ' || content.substring(i, i + 4) === 'let ' || content.substring(i, i + 6) === 'const ')) {
             let endOfStatement = content.indexOf(';', i);
             if (endOfStatement !== -1) {
                 let statement = content.substring(i, endOfStatement);
                 // 移除關鍵字 (var/let/const)
                 let varsPart = statement.replace(/^(var|let|const)\s+/, '');
-                
+
                 // 處理逗點分隔 (如: a=1, b, c)
                 // 這裡用較複雜的拆分，避免拆到物件內部的逗點
                 let currentVar = "";
                 let parenDepth = 0;
                 let braceDepth = 0;
-                
+
                 for (let j = 0; j < varsPart.length; j++) {
                     let c = varsPart[j];
                     if (c === '(') parenDepth++;
                     if (c === ')') parenDepth--;
                     if (c === '{') braceDepth++;
                     if (c === '}') braceDepth--;
-                    
+
                     if (c === ',' && parenDepth === 0 && braceDepth === 0) {
                         processVarName(currentVar, i + j, lines, content, filePath);
                         currentVar = "";
@@ -67,7 +67,7 @@ files.forEach(filePath => {
                     }
                 }
                 processVarName(currentVar, i + varsPart.length, lines, content, filePath);
-                
+
                 i = endOfStatement; // 跳過已處理區塊
             }
         }
@@ -100,6 +100,7 @@ function getAnalysis(definitions) {
                 total += count;
             }
         });
+        distribution.sort((a, b) => b.count - a.count);
         return { ...def, id: `id-${Math.random().toString(10).substring(2, 10)}`, total, distribution };
     }).sort((a, b) => b.total - a.total);
 }
@@ -166,8 +167,8 @@ function createTable(data) {
         <tbody>
             ${data.map(r => `<tr>
                 <td><b>${r.name}</b></td>
-                <td>${r.location || path.basename(r.filePath)+':'+r.line}</td>
-                <td><span class="${r.total===0?'zero':''}">${r.total}</span></td>
+                <td>${r.location || path.basename(r.filePath) + ':' + r.line}</td>
+                <td><span class="${r.total === 0 ? 'zero' : ''}">${r.total}</span></td>
                 <td>
                     ${r.total > 0 ? `<button class="btn-view" onclick="toggle('${r.id}')">查看</button>
                     <div id="${r.id}" class="dist-info">${r.distribution.map(d => `<div>• ${d.file}: <b>${d.count}</b></div>`).join('')}</div>` : '-'}
