@@ -1,4 +1,5 @@
 import { Parse } from './modules/Parse';
+import { Music } from './modules/Music';
 import { Deco } from './modules/Deco';
 import { Draw } from './modules/Draw';
 import { Svg } from './modules/Svg';
@@ -8,12 +9,11 @@ import { Format } from './modules/Format';
 import { Front } from './modules/Front';
 import { Lyrics } from './modules/Lyrics';
 import { Gchord } from './modules/Gchord';
-import { Midi } from '../other/Midi';
 import * as abc2svg from './abc2svg';
 
-class Abc {
+export class Abc {
 	user: any;
-
+	self: Abc;
 	// Core state (mapped from original glovar/info)
 	glovar: {
 		meter: {
@@ -86,21 +86,7 @@ class Abc {
 
 	// Helper to create a new block/symbol
 	new_block(text: string) {
-		if (!this.curvoice) return null;
-		let sym: any = {
-			type: abc2svg.C.BLOCK,
-			text: text,
-			start: 0,
-			next: null,
-			prev: this.curvoice.last_sym
-		};
-		if (this.curvoice.last_sym) {
-			this.curvoice.last_sym.next = sym;
-		} else {
-			this.curvoice.sym = sym;
-		}
-		this.curvoice.last_sym = sym;
-		return sym;
+		return this.parser.new_block(text);
 	}
 
 	get_glyphs() {
@@ -112,6 +98,7 @@ class Abc {
 	hooks: any = {};
 
 	// Modules
+	music: Music;
 	parser: Parse;
 	deco: Deco;
 	draw: Draw;
@@ -122,11 +109,12 @@ class Abc {
 	front: Front;
 	lyrics: Lyrics;
 	gchord: Gchord;
-	midi: Midi;
 
 	constructor(user: any) {
 		this.user = user || {};
+		this.self = this;
 		this.svg = new Svg(this); // Svg might rely on defaults, init first
+		this.music = new Music(this);
 		this.parser = new Parse(this);
 		this.deco = new Deco(this);
 		this.draw = new Draw(this);
@@ -136,8 +124,8 @@ class Abc {
 		this.front = new Front(this); // Initialize Front
 		this.lyrics = new Lyrics(this); // Initialize Lyrics
 		this.gchord = new Gchord(this); // Initialize Gchord
-		this.midi = new Midi(this); // Initialize Midi
-		Midi.hook(this); // Hook Midi immediately for now
+		//this.midi = new Midi(this); // Initialize Midi
+		//Midi.hook(this); // Hook Midi immediately for now
 
 
 		this.glovar = {
@@ -177,7 +165,7 @@ class Abc {
 			}
 		return tmp
 	}
-	errbld(sev, txt, fn, idx) {
+	errbld(sev, txt, fn?, idx?) {
 		var i, j, l, c, h
 
 		if (this.user.errbld) {
@@ -215,7 +203,7 @@ class Abc {
 		this.user.errmsg(h + txt, l, c)
 	}
 	// Error handling stub
-	error(sev: number, s: any, msg: string, a1: string, a2: string, a3: string, a4: string) {
+	error(sev: number, s: any, msg: string, a1: string = "", a2: string = "", a3: string = "", a4: string = "") {
 		var i, j, regex, tmp
 
 		if (sev < this.cfmt.quiet)
@@ -258,10 +246,6 @@ class Abc {
 		eval('"use strict";\n' + js);
 	}
 
-	// set the left offset the images
-	set_posx() {
-		this.posx = this.img.lm / this.cfmt.scale
-	}
 
 	// Forwarding methods
 	set_format(cmd: string, param: string) {
@@ -290,15 +274,14 @@ class Abc {
 
 	// Font delegates
 	get_font(name: string) {
-		// Placeholder: delegate to Format or Subs?
 		// In the original, get_font was global or on Abc prototype.
 		// It returns a font object. 
 		// For now, return a dummy object or check if Format has it.
-		return { size: 10, pad: 0, figb: false };
+		return this.formatter.get_font(name);
 	}
 
 	set_font(font: any) {
-		// Placeholder
+		this.subs.set_font(font);
 		// this.formatter.set_font_obj(font); // hypothetical
 	}
 
@@ -320,36 +303,33 @@ class Abc {
 	}
 
 	output_music() {
-		const of = () => {
-			// Default output music logic (placeholder if not in Front)
-			// In original, this calls of() which continues generation.
-			// Here, we might need to link to the next step in generation.
-			// For now, simple logging or stub.
-		};
 		if (this.hooks.output_music)
-			return this.hooks.output_music(of);
-		return of();
+			return this.hooks.output_music(this.music.output_music.bind(this.music));
+		return this.music.output_music();
 	}
 
+	set_fmt(cmd: string, param: string) {
+		const tmp_set_fmt = (cmd: string, param: string) => { /* default set_fmt logic */ };
+		if (this.hooks.set_fmt)
+			return this.hooks.set_fmt(tmp_set_fmt.bind(this), cmd, param);
+		return tmp_set_fmt(cmd, param);
+	}
 	set_pitch(last_s: any) {
-		const of = (ls: any) => { /* default set_pitch logic or stub */ };
 		if (this.hooks.set_pitch)
-			return this.hooks.set_pitch(of, last_s);
-		return of(last_s);
+			return this.hooks.set_pitch(this.music.set_pitch.bind(this.music), last_s);
+		return this.music.set_pitch(last_s);
 	}
 
 	set_vp(a: any[]) {
-		const of = (arr: any[]) => { /* default set_vp logic */ };
 		if (this.hooks.set_vp)
-			return this.hooks.set_vp(of, a);
-		return of(a);
+			return this.hooks.set_vp(this.parser.set_vp.bind(this.parser), a);
+		return this.parser.set_vp(a);
 	}
 
 	set_width(s: any) {
-		const of = (sym: any) => { /* default set_width logic */ };
 		if (this.hooks.set_width)
-			return this.hooks.set_width(of, s);
-		return of(s);
+			return this.hooks.set_width(this.music.set_width.bind(this.music), s);
+		return this.music.set_width(s);
 	}
 
 	// SVG Delegate methods
