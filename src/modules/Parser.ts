@@ -1,10 +1,11 @@
 // abc2svg - Parse module
-import type { Abc } from '../Abc';
-import * as abc2svg from '../abc2svg.ts';
-
-export class Parse {
-	abc: Abc;
-
+import { Abc } from '../Abc';
+import { ScanBuf, nil } from '../Abc';
+import * as abc2svg from '../abc2svg';
+import { C } from '../abc2svg';
+import { Adeco, Adraw, Asvg, Asubs, Atune, Aformat, Afront, Alyrics, Agchord } from '../Store';
+let abc: Abc;
+export class Parser {
 	// Character definition table
 	char_tb: string[] = [
 		"0", "0", "0", "0", "0", "0", "0", "0", "0", " ", "\n", "0", "0", "0", "0", "0",
@@ -34,14 +35,14 @@ export class Parse {
 	pq: any = {};
 	pq_d: any[] = [];
 
-	constructor(abc: Abc) {
-		this.abc = abc;
+	constructor(abc_: Abc) {
+		abc = abc_;
+		this.a_dcn = this.a_dcn;
 	}
-
 	set_ref(s: any) {
-		s.fname = this.abc.parse.fname;
-		s.istart = this.abc.parse.istart;
-		s.iend = this.abc.parse.iend;
+		s.fname = abc.parse.fname;
+		s.istart = abc.parse.istart;
+		s.iend = abc.parse.iend;
 	}
 
 	// -- %% pseudo-comment
@@ -52,9 +53,9 @@ export class Parse {
 			type: abc2svg.C.CLEF,
 			clef_line: 2,
 			clef_type: "t",
-			v: this.abc.curvoice.v,
-			p_v: this.abc.curvoice,
-			time: this.abc.curvoice.time,
+			v: abc.curvoice.v,
+			p_v: abc.curvoice,
+			time: abc.curvoice.time,
 			dur: 0,
 			clef_small: 1
 		};
@@ -107,7 +108,7 @@ export class Parse {
 				s.clef_line = 3;
 				break;
 			default:
-				this.abc.syntax(1, "Unknown clef '$1'", clef_def);
+				abc.syntax(1, "Unknown clef '$1'", clef_def);
 				return;
 		}
 
@@ -117,7 +118,7 @@ export class Parse {
 		}
 
 		// handle the octave
-		delete this.abc.curvoice.snd_oct;
+		delete abc.curvoice.snd_oct;
 		if (clef_def[i + 1] != '8' && clef_def[i + 1] != '1')
 			return s;
 
@@ -127,14 +128,14 @@ export class Parse {
 			case '+':
 				s.clef_octave = clef_def[i + 1] == '8' ? 7 : 14;
 				if (!s.clef_oct_transp)
-					this.abc.curvoice.snd_oct = clef_def[i + 1] == '8' ? 12 : 24;
+					abc.curvoice.snd_oct = clef_def[i + 1] == '8' ? 12 : 24;
 				break;
 			case '_':
 				s.clef_oct_transp = true;
 			case '-':
 				s.clef_octave = clef_def[i + 1] == '8' ? -7 : -14;
 				if (!s.clef_oct_transp)
-					this.abc.curvoice.snd_oct = clef_def[i + 1] == '8' ? -12 : -24;
+					abc.curvoice.snd_oct = clef_def[i + 1] == '8' ? -12 : -24;
 				break;
 		}
 		return s;
@@ -144,20 +145,20 @@ export class Parse {
 	get_interval(param: string | any, score?: boolean) {
 		var i, val, tmp, note, pit;
 
-		tmp = new scanBuf();
+		tmp = new ScanBuf();
 		tmp.buffer = param;
 		pit = [];
 		for (i = 0; i < 2; i++) {
-			note = tmp.buffer[tmp.index] ? parse_acc_pit(tmp) : null;
+			note = tmp.buffer[tmp.index] ? this.parse_acc_pit(tmp) : null;
 			if (!note) {
 				if (i != 1 || !score) {
-					syntax(1, errs.bad_transp);
+					abc.syntax(1, abc.errs.bad_transp);
 					return;
 				}
 				pit[i] = 242; // 'c' (C5)
 			} else {
 				if (typeof note.acc == 'object') {
-					syntax(1, errs.bad_transp);
+					abc.syntax(1, abc.errs.bad_transp);
 					return;
 				}
 				pit[i] = abc2svg.pab40(note.pit, note.acc);
@@ -177,7 +178,7 @@ export class Parse {
 		}
 
 		b40 = abc2svg.pab40(nt.pit, a)
-			+ this.abc.curvoice.tr_sco;		// base-40 transposition
+			+ abc.curvoice.tr_sco;		// base-40 transposition
 
 		nt.pit = abc2svg.b40p(b40);		// new pitch
 		an = abc2svg.b40a(b40);			// new accidental
@@ -191,7 +192,7 @@ export class Parse {
 			a = an;
 			if (
 				!nt.acc && // if no old accidental
-				!curvoice.ckey.k_none
+				!abc.curvoice.ckey.k_none
 			)
 				// and normal key
 				a = 0; // no accidental
@@ -231,7 +232,7 @@ export class Parse {
 		var i, item;
 
 		for (i = 0; i < 128; i++) {
-			if (char_tb[i] == '\n') char_tb[i] = nil; // remove old definition
+			if (this.char_tb[i] == '\n') this.char_tb[i] = nil; // remove old definition
 		}
 		param = param.split(/\s+/);
 		for (i = 0; i < param.length; i++) {
@@ -250,7 +251,7 @@ export class Parse {
 					item = '\n';
 					break;
 				default:
-					syntax(1, "Bad value '$1' in %%linebreak - ignored", item);
+					abc.syntax(1, "Bad value '$1' in %%linebreak - ignored", item);
 					continue;
 			}
 			char_tb[item.charCodeAt(0)] = '\n';
@@ -265,7 +266,7 @@ export class Parse {
 			a = parm.match(/(.)[=\s]*(\[I:.+\]|".+"|!.+!)$/);
 
 		if (!a) {
-			syntax(1, 'Lack of starting [, ! or " in U: / %%user');
+			abc.syntax(1, 'Lack of starting [, ! or " in U: / %%user');
 			return;
 		}
 		c = a[1];
@@ -277,10 +278,10 @@ export class Parse {
 
 		k = c.charCodeAt(0);
 		if (k >= 128) {
-			syntax(1, errs.not_ascii);
+			abc.syntax(1, abc.errs.not_ascii);
 			return;
 		}
-		switch (char_tb[k][0]) {
+		switch (this.char_tb[k][0]) {
 			case '0': // nil
 			case 'd':
 			case 'i':
@@ -289,10 +290,10 @@ export class Parse {
 			case '"':
 			case '!':
 			case '[':
-				if (char_tb[k].length > 1) break;
+				if (this.char_tb[k].length > 1) break;
 			// fall thru
 			default:
-				syntax(1, "Bad user character '$1'", c);
+				abc.syntax(1, "Bad user character '$1'", c);
 				return;
 		}
 		switch (v) {
@@ -307,7 +308,7 @@ export class Parse {
 				v = 'd';
 				break;
 		}
-		char_tb[k] = v;
+		this.char_tb[k] = v;
 	}
 
 	// get a stafflines value
@@ -359,7 +360,7 @@ export class Parse {
 			item = a.shift();
 			if (!item) break;
 			if (item.slice(-1) == '=' && !a.length) {
-				syntax(1, errs.bad_val, item);
+				abc.syntax(1, abc.errs.bad_val, item);
 				break;
 			}
 			switch (item) {
@@ -384,17 +385,17 @@ export class Parse {
 							break;
 						}
 					}
-					syntax(1, errs.bad_val, item);
+					abc.syntax(1, abc.errs.bad_val, item);
 					break;
 				case 'octave=':
 					val = +a.shift();
-					if (isNaN(val)) syntax(1, errs.bad_val, item);
-					else curvoice.octave = val;
+					if (isNaN(val)) abc.syntax(1, abc.errs.bad_val, item);
+					else abc.curvoice.octave = val;
 					break;
 				case 'cue=':
 					// (ignore cue=off)
-					//			curvoice.scale = a.shift() == 'on' ? .7 : 1
-					if (a.shift() == 'on') curvoice.scale = 0.7;
+					//			abc.curvoice.scale = a.shift() == 'on' ? .7 : 1
+					if (a.shift() == 'on') abc.curvoice.scale = 0.7;
 					break;
 				case 'instrument=':
 					// instrument=M/N => score=MN and sound=cN
@@ -408,14 +409,14 @@ export class Parse {
 					}
 					break;
 				case 'map=': // %%voicemap
-					curvoice.map = a.shift();
+					abc.curvoice.map = a.shift();
 					break;
 				case 'name=':
 				case 'nm=':
-					curvoice.nm = a.shift();
-					if (curvoice.nm[0] == '"')
-						curvoice.nm = cnv_escape(curvoice.nm.slice(1, -1));
-					curvoice.new_name = true;
+					abc.curvoice.nm = a.shift();
+					if (abc.curvoice.nm[0] == '"')
+						abc.curvoice.nm = Afront.cnv_escape(abc.curvoice.nm.slice(1, -1));
+					abc.curvoice.new_name = true;
 					break;
 				case 'stem=': // compatibility
 				case 'pos=': // from %%pos only
@@ -427,7 +428,7 @@ export class Parse {
 					else item = ['stm', a.shift()];
 					val = posval[item[1]];
 					if (val == undefined) {
-						syntax(1, errs.bad_val, '%%pos');
+						abc.syntax(1, abc.errs.bad_val, '%%pos');
 						break;
 					}
 					switch (item[2]) {
@@ -447,42 +448,42 @@ export class Parse {
 				case 'scale=': // %%voicescale
 					val = +a.shift();
 					if (isNaN(val) || val < 0.5 || val > 2)
-						syntax(1, errs.bad_val, '%%voicescale');
-					else curvoice.scale = val;
+						abc.syntax(1, abc.errs.bad_val, '%%voicescale');
+					else abc.curvoice.scale = val;
 					break;
 				case 'score=':
-					if (cfmt.nedo) {
-						syntax(1, errs.notransp);
+					if (abc.cfmt.nedo) {
+						abc.syntax(1, abc.errs.notransp);
 						break;
 					}
 					// score=MN
 					// (score=M == score=Mc)
 					item = a.shift();
-					if (cfmt.sound && curvoice.time) break;
+					if (abc.cfmt.sound && abc.curvoice.time) break;
 					val = get_interval(item, true);
 					if (val != undefined) {
-						if (!curvoice.time)
+						if (!abc.curvoice.time)
 							// keep the first score shift
-							curvoice.tr_ins = -val;
-						if (cfmt.sound) break;
-						curvoice.score = val;
+							abc.curvoice.tr_ins = -val;
+						if (abc.cfmt.sound) break;
+						abc.curvoice.score = val;
 						tr_p |= 1;
 					}
 					break;
 				case 'shift=':
-					if (cfmt.nedo) {
-						syntax(1, errs.notransp);
+					if (abc.cfmt.nedo) {
+						abc.syntax(1, abc.errs.notransp);
 						break;
 					}
 					val = get_interval(a.shift());
 					if (val != undefined) {
-						curvoice.shift = val;
+						abc.curvoice.shift = val;
 						tr_p = 3;
 					}
 					break;
 				case 'sound=':
-					if (cfmt.nedo) {
-						syntax(1, errs.notransp);
+					if (abc.cfmt.nedo) {
+						abc.syntax(1, abc.errs.notransp);
 						break;
 					}
 					// concert-score display: apply sound=
@@ -490,51 +491,51 @@ export class Parse {
 					// sound: apply sound=
 					val = get_interval(a.shift());
 					if (val == undefined) break;
-					curvoice.sound = val;
-					if (cfmt.sound) curvoice.score = (curvoice.score || 0) + val;
+					abc.curvoice.sound = val;
+					if (abc.cfmt.sound) abc.curvoice.score = (abc.curvoice.score || 0) + val;
 					tr_p |= 2;
-					if (!curvoice.time)
+					if (!abc.curvoice.time)
 						// keep the first sound shift
-						curvoice.tr_ins = val; // instrument sound
+						abc.curvoice.tr_ins = val; // instrument sound
 					break;
 				case 'subname=':
 				case 'sname=':
 				case 'snm=':
-					curvoice.snm = a.shift();
-					if (curvoice.snm[0] == '"') curvoice.snm = curvoice.snm.slice(1, -1);
+					abc.curvoice.snm = a.shift();
+					if (abc.curvoice.snm[0] == '"') abc.curvoice.snm = abc.curvoice.snm.slice(1, -1);
 					break;
 				case 'stafflines=':
-					val = get_st_lines(a.shift());
+					val = this.get_st_lines(a.shift());
 					if (val == undefined) {
-						syntax(1, 'Bad %%stafflines value');
+						abc.syntax(1, 'Bad %%stafflines value');
 						break;
 					}
-					if (curvoice.st != undefined)
-						par_sy.staves[curvoice.st].stafflines = val;
-					curvoice.stafflines = val;
+					if (abc.curvoice.st != undefined)
+						par_sy.staves[abc.curvoice.st].stafflines = val;
+					abc.curvoice.stafflines = val;
 					break;
 				case 'staffnonote=':
 					val = +a.shift();
-					if (isNaN(val)) syntax(1, 'Bad %%staffnonote value');
-					else curvoice.staffnonote = val;
+					if (isNaN(val)) abc.syntax(1, 'Bad %%staffnonote value');
+					else abc.curvoice.staffnonote = val;
 					break;
 				case 'staffscale=':
 					val = +a.shift();
 					if (isNaN(val) || val < 0.3 || val > 2)
-						syntax(1, 'Bad %%staffscale value');
-					else curvoice.staffscale = val;
+						abc.syntax(1, 'Bad %%staffscale value');
+					else abc.curvoice.staffscale = val;
 					break;
 				case 'tacet=':
 					val = a.shift();
-					curvoice.tacet = val || undefined;
+					abc.curvoice.tacet = val || undefined;
 					break;
 				case 'transpose=': // (abcMIDI compatibility)
-					val = get_transp(a.shift());
+					val = Atune.get_transp(a.shift());
 					if (val == undefined) {
-						syntax(1, errs.bad_transp);
+						abc.syntax(1, abc.errs.bad_transp);
 					} else {
-						curvoice.sound = val;
-						if (cfmt.sound) curvoice.score = val;
+						abc.curvoice.sound = val;
+						if (abc.cfmt.sound) abc.curvoice.score = val;
 						tr_p = 2;
 					}
 					break;
@@ -556,9 +557,9 @@ export class Parse {
 			}
 		}
 		if (pos) {
-			curvoice.pos = clone(curvoice.pos);
+			abc.curvoice.pos = Abc.clone(abc.curvoice.pos);
 			for (item in pos)
-				if (pos.hasOwnProperty(item)) curvoice.pos[item] = pos[item];
+				if (pos.hasOwnProperty(item)) abc.curvoice.pos[item] = pos[item];
 		}
 
 		if (s) {
@@ -571,24 +572,24 @@ export class Parse {
 
 		// if transposition
 		if (tr_p & 2) {
-			// curvoice.tr_sco is set in key_trans()
-			tr_p = (curvoice.sound | 0) + (curvoice.shift | 0);
-			if (tr_p) curvoice.tr_snd = abc2svg.b40m(tr_p + 122) - 36;
+			// abc.curvoice.tr_sco is set in key_trans()
+			tr_p = (abc.curvoice.sound | 0) + (abc.curvoice.shift | 0);
+			if (tr_p) abc.curvoice.tr_snd = abc2svg.b40m(tr_p + 122) - 36;
 			// semi-tone interval
-			else if (curvoice.tr_snd) curvoice.tr_snd = 0;
-			curvoice.tr_snd40 = tr_p; // (for play chords)
+			else if (abc.curvoice.tr_snd) abc.curvoice.tr_snd = 0;
+			abc.curvoice.tr_snd40 = tr_p; // (for play chords)
 		}
 	}; // set_vp()
 
 	// set the K: / V: parameters
 	set_kv_parm(a) {
 		// array of items
-		if (!curvoice.init) {
+		if (!abc.curvoice.init) {
 			// add the global parameters if not done yet
-			curvoice.init = true;
-			if (info.V) {
-				if (info.V[curvoice.id]) a = info.V[curvoice.id].concat(a);
-				if (info.V['*']) a = info.V['*'].concat(a);
+			abc.curvoice.init = true;
+			if (abc.info.V) {
+				if (abc.info.V[abc.curvoice.id]) a = abc.info.V[abc.curvoice.id].concat(a);
+				if (abc.info.V['*']) a = abc.info.V['*'].concat(a);
 			}
 		}
 		if (a.length) self.set_vp(a);
@@ -601,9 +602,9 @@ export class Parse {
 	) {
 		// array of items
 		if (!a.length) return;
-		if (!info.V) info.V = {};
-		if (info.V[vid]) Array.prototype.push.apply(info.V[vid], a);
-		else info.V[vid] = a;
+		if (!abc.info.V) abc.info.V = {};
+		if (abc.info.V[vid]) Array.prototype.push.apply(abc.info.V[vid], a);
+		else abc.info.V[vid] = a;
 	}
 
 	// K: key signature
@@ -626,7 +627,7 @@ export class Parse {
 				case 'H': // bagpipe
 					key_end = true;
 					if (param[1].toLowerCase() != 'p') {
-						syntax(1, 'Unknown bagpipe-like key');
+						abc.syntax(1, 'Unknown bagpipe-like key');
 						break;
 					}
 					s.k_bagpipe = param[1];
@@ -634,13 +635,13 @@ export class Parse {
 					i++;
 
 					// initialize the temperament if not done yet
-					if (!cfmt.temper)
+					if (!abc.cfmt.temper)
 						// detune in cents for just intonation in A
 						// (from https://patrickmclaurin.com/wordpress/?page_id=2420)
 						//  C    ^C     D    _E     E     F    ^F     G    _A     A    _B     B
 						// 15.3 -14.0  -2.0 -10.0   1.9  13.3 -16.0 -31.8 -12.0   0.0  11.4   3.8
 						// but 'A' bagpipe = 480Hz => raise Math.log2(480/440)*1200 = 151
-						cfmt.temper = new Float32Array([
+						abc.cfmt.temper = new Float32Array([
 							//	1.66, 1.37, 1.49, 1.41, 1.53, 1.63, 1.35, 1.19, 1.39, 1.51, 1.62, 1.55
 							//   C    ^C     D    _E     E     F    ^F     G    _A      A     _B      B
 							11.62,
@@ -651,7 +652,7 @@ export class Parse {
 						]);
 					break;
 				case 'P':
-					syntax(1, 'K:P is deprecated');
+					abc.syntax(1, 'K:P is deprecated');
 					sf = 0;
 					s.k_drum = true;
 					key_end = true;
@@ -667,7 +668,7 @@ export class Parse {
 				default:
 					s.k_map = [];
 					s.k_mode = 0;
-					return [s, info_split(param)];
+					return [s, abc.info_split(param)];
 			}
 		}
 
@@ -728,7 +729,7 @@ export class Parse {
 			// [exp] accidentals
 			if (param.indexOf('exp ') == 0) {
 				param = param.replace(/\w+\s*/, '');
-				if (!param) syntax(1, "No accidental after 'exp'");
+				if (!param) abc.syntax(1, "No accidental after 'exp'");
 				s.exp = 1; //true
 			}
 			c = param[0];
@@ -751,7 +752,7 @@ export class Parse {
 		}
 
 		if (sf < -7 || sf > 7) {
-			syntax(1, 'Key with double sharps/flats');
+			abc.syntax(1, 'Key with double sharps/flats');
 			if (sf > 7) sf -= 12;
 			else sf += 12;
 		}
@@ -774,7 +775,7 @@ export class Parse {
 		s.k_mode = mode;
 		s.k_b40 = [1, 24, 7, 30, 13, 36, 19, 2, 25, 8, 31, 14, 37, 20, 3][sf + 7];
 
-		return [s, info_split(param)];
+		return [s, abc.info_split(param)];
 	}
 
 
@@ -867,7 +868,7 @@ export class Parse {
 						continue;
 					default:
 						if (p[i] <= '0' || p[i] > '9') {
-							syntax(1, "Bad char '$1' in M:", p[i]);
+							abc.syntax(1, "Bad char '$1' in M:", p[i]);
 							return;
 						}
 						m2 = 2; /* default when no bottom value */
@@ -881,7 +882,7 @@ export class Parse {
 							if (p[i] == '/') {
 								i++;
 								if (p[i] <= '0' || p[i] > '9') {
-									syntax(1, "Bad char '$1' in M:", p[i]);
+									abc.syntax(1, "Bad char '$1' in M:", p[i]);
 									return;
 								}
 								meter.bot = p[i++];
@@ -912,23 +913,23 @@ export class Parse {
 		if (p[i] == '=') {
 			val = p.substring(++i).match(/^(\d+)\/(\d+)$/);
 			if (!val) {
-				syntax(1, "Bad duration '$1' in M:", p.substring(i));
+				abc.syntax(1, "Bad duration '$1' in M:", p.substring(i));
 				return;
 			}
 			wmeasure = (C.BLEN * val[1]) / val[2];
 		}
 		if (!wmeasure) {
-			syntax(1, errs.bad_val, 'M:');
+			abc.syntax(1, abc.errs.bad_val, 'M:');
 			return;
 		}
 		s.wmeasure = wmeasure;
 
-		if (cfmt.writefields.indexOf('M') < 0) s.a_meter = [];
+		if (abc.cfmt.writefields.indexOf('M') < 0) s.a_meter = [];
 
-		if (parse.state != 3) {
-			info.M = p;
+		if (abc.parse.state != 3) {
+			abc.info.M = p;
 			glovar.meter = s;
-			if (parse.state) {
+			if (abc.parse.state) {
 
 				/* in the tune header, change the unit note length */
 				if (!glovar.ulen) {
@@ -942,12 +943,12 @@ export class Parse {
 				}
 			}
 		} else {
-			curvoice.wmeasure = wmeasure;
-			if (is_voice_sig()) curvoice.meter = s;
+			abc.curvoice.wmeasure = wmeasure;
+			if (is_voice_sig()) abc.curvoice.meter = s;
 			else sym_link(s);
 
 			// set the meter of the overlay voices
-			for (p_v = curvoice.voice_down; p_v; p_v = p_v.voice_down)
+			for (p_v = abc.curvoice.voice_down; p_v; p_v = p_v.voice_down)
 				p_v.wmeasure = wmeasure;
 		}
 	}
@@ -956,13 +957,13 @@ export class Parse {
 	link_pq(s, text) {
 		var p_v, s2;
 
-		if (curvoice.v == par_sy.top_voice) {
+		if (abc.curvoice.v == par_sy.top_voice) {
 			sym_link(s);
 		} else if (voice_tb[par_sy.top_voice].time == s.time) {
-			p_v = curvoice;
-			curvoice = voice_tb[par_sy.top_voice];
+			p_v = abc.curvoice;
+			abc.curvoice.= voice_tb[par_sy.top_voice];
 			sym_link(s);
-			curvoice = p_v;
+			abc.curvoice.= p_v;
 		} else if (voice_tb[par_sy.top_voice].time > s.time) {
 			p_v = voice_tb[par_sy.top_voice];
 			for (s2 = p_v.sym; ; s2 = s2.next) {
@@ -983,11 +984,11 @@ export class Parse {
 		} else {
 			set_ref(s);
 			s.fmt = cfmt;
-			if (!parse.pq_d) parse.pq_d = [];
-			parse.pq_d.push(s); // delayed insertion
+			if (!abc.parse.pq_d) abc.parse.pq_d = [];
+			abc.parse.pq_d.push(s); // delayed insertion
 		}
-		if (!parse.pq) parse.pq = {};
-		parse.pq[text] = s.time;
+		if (!abc.parse.pq) abc.parse.pq = {};
+		abc.parse.pq[text] = s.time;
 	} // link_pq()
 
 	/* Q: tempo */
@@ -996,7 +997,7 @@ export class Parse {
 			c,
 			d,
 			nd,
-			txt = text, // (for info.Q)
+			txt = text, // (for abc.info.Q)
 			s = {
 				type: C.TEMPO,
 				dur: 0,
@@ -1015,18 +1016,18 @@ export class Parse {
 					if (!isNaN(n)) return (C.BLEN * n) / d;
 				}
 			}
-			syntax(1, 'Invalid note duration $1', c);
+			abc.syntax(1, 'Invalid note duration $1', c);
 		} // get_nd()
 
 		set_ref(s);
 
-		if (cfmt.writefields.indexOf('Q') < 0) s.invis = true; // don't display
+		if (abc.cfmt.writefields.indexOf('Q') < 0) s.invis = true; // don't display
 
 		/* string before */
 		if (text[0] == '"') {
 			c = text.match(/"([^"]*)"/); // "
 			if (!c) {
-				syntax(1, 'Unterminated string in Q:');
+				abc.syntax(1, 'Unterminated string in Q:');
 				return;
 			}
 			s.tempo_str1 = c[1];
@@ -1067,37 +1068,37 @@ export class Parse {
 			} else {
 				s.tempo = +text;
 				if (!s.tempo || isNaN(s.tempo)) {
-					syntax(1, 'Bad tempo value');
+					abc.syntax(1, 'Bad tempo value');
 					return;
 				}
 			}
 		}
 
 		if (
-			parse.state < 2 || // if in tune header
-			(!curvoice.time && !glovar.tempo)
+			abc.parse.state < 2 || // if in tune header
+			(!abc.curvoice.time && !glovar.tempo)
 		) {
-			info.Q = txt;
+			abc.info.Q = txt;
 			glovar.tempo = s;
 			return;
 		}
 
-		if (!glovar.tempo) syntax(0, 'No previous tempo');
-		s.time = curvoice.time;
+		if (!glovar.tempo) abc.syntax(0, 'No previous tempo');
+		s.time = abc.curvoice.time;
 		text = 'Q' + (s.tempo_str1 ? 'S' : '') + s.time;
 		// accept [Q:"text"][Q:1/4=60]
-		if (parse.pq && parse.pq[text] == s.time) return; // already seen
+		if (abc.parse.pq && abc.parse.pq[text] == s.time) return; // already seen
 		link_pq(s, text);
 	}
 
 	// treat the information fields which may embedded
-	do_info(info_type, text) {
+	do_info(abc.info_type, text) {
 		var s, d1, d2, a, vid, tim, v, p_v;
 
 		// skip this line if the current voice is ignored
 		// but keep the time related definitions
-		if (curvoice && curvoice.ignore) {
-			switch (info_type) {
+		if (abc.curvoice && abc.curvoice.ignore) {
+			switch (abc.info_type) {
 				default:
 					return;
 				case 'P':
@@ -1107,7 +1108,7 @@ export class Parse {
 			}
 		}
 
-		switch (info_type) {
+		switch (abc.info_type) {
 
 			// info fields in any state
 			case 'I':
@@ -1130,14 +1131,14 @@ export class Parse {
 					d1 = d2 = -1;
 				}
 				if (!d2) {
-					syntax(1, 'Bad L: value');
+					abc.syntax(1, 'Bad L: value');
 					break;
 				}
-				if (parse.state <= 1) {
+				if (abc.parse.state <= 1) {
 					glovar.ulen = d1;
 				} else {
-					curvoice.ulen = d1;
-					curvoice.dur_fact = d2 / d1;
+					abc.curvoice.ulen = d1;
+					abc.curvoice.dur_fact = d2 / d1;
 				}
 				break;
 			case 'M':
@@ -1149,40 +1150,40 @@ export class Parse {
 
 			// fields in tune header or tune body
 			case 'P':
-				if (!parse.state) break;
-				if (parse.state == 1) {
-					info.P = text;
+				if (!abc.parse.state) break;
+				if (abc.parse.state == 1) {
+					abc.info.P = text;
 					break;
 				}
 				s = {
 					type: C.PART,
 					text: text,
-					time: curvoice.time,
+					time: abc.curvoice.time,
 				};
-				if (info.P) {
-					tim = parse.pq && parse.pq[text]; // time of previous P: with same text
+				if (abc.info.P) {
+					tim = abc.parse.pq && abc.parse.pq[text]; // time of previous P: with same text
 					if (tim == s.time) break; // already seen
 					if (tim != null) {
-						syntax(1, 'Misplaced P:'); // different dates
+						abc.syntax(1, 'Misplaced P:'); // different dates
 						break;
 					}
 				}
 
-				if (cfmt.writefields.indexOf('P') < 0) s.invis = 1; //true
+				if (abc.cfmt.writefields.indexOf('P') < 0) s.invis = 1; //true
 				link_pq(s, text);
 				break;
 			case 'Q':
-				if (!parse.state) break;
+				if (!abc.parse.state) break;
 				new_tempo(text);
 				break;
 			case 'V':
 				get_voice(text);
-				if (parse.state == 3) curvoice.ignore = !par_sy.voices[curvoice.v];
+				if (abc.parse.state == 3) abc.curvoice.ignore = !par_sy.voices[abc.curvoice.v];
 				break;
 
 			// key signature at end of tune header or in tune body
 			case 'K':
-				if (!parse.state)
+				if (!abc.parse.state)
 					// ignore if in file header
 					break;
 				get_key(text);
@@ -1191,11 +1192,11 @@ export class Parse {
 			// info in any state
 			case 'N':
 			case 'R':
-				if (!info[info_type]) info[info_type] = text;
-				else info[info_type] += '\n' + text;
+				if (!abc.info[abc.info_type]) abc.info[abc.info_type] = text;
+				else abc.info[abc.info_type] += '\n' + text;
 				break;
 			case 'r':
-				if (!user.keep_remark || parse.state != 3) break;
+				if (!user.keep_remark || abc.parse.state != 3) break;
 				s = {
 					type: C.REMARK,
 					text: text,
@@ -1204,7 +1205,7 @@ export class Parse {
 				sym_link(s);
 				break;
 			default:
-				syntax(0, "'$1:' line ignored", info_type);
+				abc.syntax(0, "'$1:' line ignored", info_type);
 				break;
 		}
 	}
@@ -1216,15 +1217,15 @@ export class Parse {
 		var s2, time, auto_time, i, fac;
 
 		/* search the start of the measure */
-		s2 = curvoice.last_sym;
+		s2 = abc.curvoice.last_sym;
 		if (!s2) return;
 
 		/* the bar time is correct if there are multi-rests */
 		if (s2.type == C.MREST || s2.type == C.BAR) /* in second voice */ return;
 		while (s2.type != C.BAR && s2.prev) s2 = s2.prev;
 		time = s2.time;
-		auto_time = curvoice.time - time;
-		fac = curvoice.wmeasure / auto_time;
+		auto_time = abc.curvoice.time - time;
+		fac = abc.curvoice.wmeasure / auto_time;
 
 		if (fac == 1) return; /* already good duration */
 
@@ -1237,7 +1238,7 @@ export class Parse {
 			if (s2.type != C.NOTE && s2.type != C.REST) continue;
 			for (i = 0; i <= s2.nhd; i++) s2.notes[i].dur *= fac;
 		}
-		curvoice.time = s.time = time;
+		abc.curvoice.time = s.time = time;
 	}
 
 	/* -- parse a bar -- */
@@ -1245,11 +1246,11 @@ export class Parse {
 		var s2,
 			c,
 			bar_type,
-			line = parse.line,
+			line = abc.parse.line,
 			s = {
 				type: C.BAR,
-				fname: parse.fname,
-				istart: parse.bol + line.index,
+				fname: abc.parse.fname,
+				istart: abc.parse.bol + line.index,
 				dur: 0,
 				multi: 0, // needed for decorations
 			};
@@ -1287,7 +1288,7 @@ export class Parse {
 
 		// set the annotations and the decorations
 		if (a_gch) csan_add(s);
-		if (a_dcn.length) deco_cnv(s);
+		if (this.a_dcn.length) deco_cnv(s);
 
 		/* if the last element is '[', it may start
 		 * a chord or an embedded header */
@@ -1311,7 +1312,7 @@ export class Parse {
 			while (1) {
 				c = line.next_char();
 				if (!c) {
-					syntax(1, 'No end of repeat string');
+					abc.syntax(1, 'No end of repeat string');
 					return;
 				}
 				if (c == '"') {
@@ -1329,7 +1330,7 @@ export class Parse {
 			else s.invis = true;
 		}
 
-		s.iend = parse.bol + line.index;
+		s.iend = abc.parse.bol + line.index;
 
 		if (s.text && bar_type.slice(-1) == '[' && bar_type != '[')
 			bar_type = bar_type.slice(0, -1);
@@ -1339,39 +1340,39 @@ export class Parse {
 			// left repeat
 			s.rbstop = 1; // end the bracket
 			if (s.text) {
-				syntax(1, 'Variant ending on a left repeat bar');
+				abc.syntax(1, 'Variant ending on a left repeat bar');
 				delete s.text;
 			}
-			curvoice.tie_s_rep = null; // no tie anymore on new variant
+			abc.curvoice.tie_s_rep = null; // no tie anymore on new variant
 		}
 
 		// handle the accidentals (ties and repeat)
 		if (s.text) {
 			s.rbstart = s.rbstop = 2;
 			if (s.text[0] == '1') {
-				curvoice.tie_s_rep = curvoice.tie_s;
-				if (curvoice.acc_tie) curvoice.acc_tie_rep = curvoice.acc_tie.slice();
-				else if (curvoice.acc_tie_rep) curvoice.acc_tie_rep = null;
+				abc.curvoice.tie_s_rep = abc.curvoice.tie_s;
+				if (abc.curvoice.acc_tie) abc.curvoice.acc_tie_rep = abc.curvoice.acc_tie.slice();
+				else if (abc.curvoice.acc_tie_rep) abc.curvoice.acc_tie_rep = null;
 			} else {
-				curvoice.tie_s = curvoice.tie_s_rep;
-				if (curvoice.acc_tie_rep) curvoice.acc_tie = curvoice.acc_tie_rep.slice();
+				abc.curvoice.tie_s = abc.curvoice.tie_s_rep;
+				if (abc.curvoice.acc_tie_rep) abc.curvoice.acc_tie = abc.curvoice.acc_tie_rep.slice();
 			}
-			if (curvoice.norepbra && !curvoice.second) s.norepbra = 1; //true
+			if (abc.curvoice.norepbra && !abc.curvoice.second) s.norepbra = 1; //true
 		}
 
-		if (curvoice.ulen < 0)
+		if (abc.curvoice.ulen < 0)
 			// L:auto
 			adjust_dur(s);
 
 		// merge ":| |:" into "::" and other cases
 		if (
 			(bar_type == '[' || bar_type == '|:') &&
-			!curvoice.eoln &&
+			!abc.curvoice.eoln &&
 			!s.a_gch &&
 			!s.invis
 		) {
 			// no annotation nor invisible
-			s2 = curvoice.last_sym;
+			s2 = abc.curvoice.last_sym;
 
 			// if the previous symbol is also a bar
 			if (s2 && s2.type == C.BAR) {
@@ -1384,9 +1385,9 @@ export class Parse {
 					if (s.text) {
 						s2.text = s.text;
 						if (
-							curvoice.st &&
+							abc.curvoice.st &&
 							!s.norepbra &&
-							!(par_sy.staves[curvoice.st - 1].flags & STOP_BAR)
+							!(par_sy.staves[abc.curvoice.st - 1].flags & STOP_BAR)
 						)
 							s2.xsh = 4; // volta shift
 					}
@@ -1424,7 +1425,7 @@ export class Parse {
 				bar_type = '::';
 				break;
 			case '||':
-				if (cfmt['abc-version'] >= '2.2') break;
+				if (abc.cfmt['abc-version'] >= '2.2') break;
 			// fall thru - play repeat on double bar when old ABC version
 			case '[|':
 			case '|]':
@@ -1432,12 +1433,12 @@ export class Parse {
 				break;
 		}
 		s.bar_type = bar_type;
-		if (!curvoice.lyric_restart) curvoice.lyric_restart = s;
-		if (!curvoice.sym_restart) curvoice.sym_restart = s;
+		if (!abc.curvoice.lyric_restart) abc.curvoice.lyric_restart = s;
+		if (!abc.curvoice.sym_restart) abc.curvoice.sym_restart = s;
 
 		sym_link(s);
 
-		s.st = curvoice.st; /* original staff */
+		s.st = abc.curvoice.st; /* original staff */
 
 		// possibly shift the volta bracket if not on the first staff
 		if (
@@ -1449,7 +1450,7 @@ export class Parse {
 		)
 			s.xsh = 4; // volta shift
 
-		if (!s.bar_dotted && !s.invis) curvoice.acc = []; // no accidental anymore
+		if (!s.bar_dotted && !s.invis) abc.curvoice.acc = []; // no accidental anymore
 	}
 
 	// parse %%staves / %%score
@@ -1469,7 +1470,7 @@ export class Parse {
 			a = p.match(/[^[\]|{}()*+\s]+|[^\s]/g);
 
 		if (!a) {
-			syntax(1, errs.bad_val, '%%score');
+			abc.syntax(1, abc.errs.bad_val, '%%score');
 			return; // null
 		}
 		while (1) {
@@ -1478,7 +1479,7 @@ export class Parse {
 			switch (e) {
 				case '[':
 					if (parenth || brace + bracket >= 2) {
-						syntax(1, errs.misplaced, '[');
+						abc.syntax(1, abc.errs.misplaced, '[');
 						err = true;
 						break;
 					}
@@ -1489,7 +1490,7 @@ export class Parse {
 					break;
 				case '{':
 					if (parenth || brace || bracket >= 2) {
-						syntax(1, errs.misplaced, '{');
+						abc.syntax(1, abc.errs.misplaced, '{');
 						err = true;
 						break;
 					}
@@ -1500,7 +1501,7 @@ export class Parse {
 					break;
 				case '(':
 					if (parenth) {
-						syntax(1, errs.misplaced, '(');
+						abc.syntax(1, abc.errs.misplaced, '(');
 						err = true;
 						break;
 					}
@@ -1519,7 +1520,7 @@ export class Parse {
 				case ']':
 				case '}':
 				case ')':
-					syntax(1, 'Bad voice ID in %%score');
+					abc.syntax(1, 'Bad voice ID in %%score');
 					err = true;
 					break;
 				default: // get / create the voice in the voice table
@@ -1530,7 +1531,7 @@ export class Parse {
 						switch (e) {
 							case ']':
 								if (!(flags_st & OPEN_BRACKET)) {
-									syntax(1, errs.misplaced, ']');
+									abc.syntax(1, abc.errs.misplaced, ']');
 									err = true;
 									break;
 								}
@@ -1540,7 +1541,7 @@ export class Parse {
 								continue;
 							case '}':
 								if (!(flags_st & OPEN_BRACE)) {
-									syntax(1, errs.misplaced, '}');
+									abc.syntax(1, abc.errs.misplaced, '}');
 									err = true;
 									break;
 								}
@@ -1551,7 +1552,7 @@ export class Parse {
 								continue;
 							case ')':
 								if (!(flags_st & OPEN_PARENTH)) {
-									syntax(1, errs.misplaced, ')');
+									abc.syntax(1, abc.errs.misplaced, ')');
 									err = true;
 									break;
 								}
@@ -1566,7 +1567,7 @@ export class Parse {
 						break;
 					}
 					if (vids[vid]) {
-						syntax(1, 'Double voice in %%score');
+						abc.syntax(1, 'Double voice in %%score');
 						err = true;
 					} else {
 						vids[vid] = true;
@@ -1579,7 +1580,7 @@ export class Parse {
 			}
 		}
 		if (flags_st != 0) {
-			syntax(1, "'}', ')' or ']' missing in %%score");
+			abc.syntax(1, "'}', ')' or ']' missing in %%score");
 			err = true;
 		}
 		if (err || !a_vf.length) return; //null
@@ -1587,19 +1588,19 @@ export class Parse {
 	}
 
 	// split an info string
-	info_split(text) {
+	abc.info_split(text) {
 		if (!text) return [];
 		var a = text.match(/[^\s"=]+=?|"[^"]*"/g); // "
 		if (!a) {
 			//fixme: bad error text
-			syntax(1, 'Unterminated string');
+			abc.syntax(1, 'Unterminated string');
 			return [];
 		}
 		return a;
 	}
 
 	// parse a duration and return [numerator, denominator]
-	// 'line' is not always 'parse.line'
+	// 'line' is not always 'abc.parse.line'
 	reg_dur = /(\d*)(\/*)(\d*)/g; /* (stop comment) */
 
 	parse_dur(line) {
@@ -1656,9 +1657,9 @@ export class Parse {
 				// shortcut
 				nd = parse_dur(line);
 				if (acc < 0) nd[0] = -nd[0];
-				if (cfmt.nedo && nd[1] == 1) {
+				if (abc.cfmt.nedo && nd[1] == 1) {
 					nd[0] *= 12;
-					nd[1] *= cfmt.nedo;
+					nd[1] *= abc.cfmt.nedo;
 				}
 				acc = nd;
 				c = line.char();
@@ -1669,7 +1670,7 @@ export class Parse {
 		pit = ntb.indexOf(c) + 16;
 		c = line.next_char();
 		if (pit < 16) {
-			syntax(1, "'$1' is not a note", line.buffer[line.index - 1]);
+			abc.syntax(1, "'$1' is not a note", line.buffer[line.index - 1]);
 			return; //undefined
 		}
 
@@ -1782,7 +1783,7 @@ export class Parse {
 	}
 
 	/* -- parse note or rest with pitch and length -- */
-	// 'line' is not always 'parse.line'
+	// 'line' is not always 'abc.parse.line'
 	parse_basic_note(line, ulen) {
 		var nd,
 			note = parse_acc_pit(line);
@@ -1792,7 +1793,7 @@ export class Parse {
 		// duration
 		if (line.char() == '0') {
 			// compatibility
-			parse.stemless = true;
+			abc.parse.stemless = true;
 			line.index++;
 		}
 		nd = parse_dur(line);
@@ -1801,12 +1802,12 @@ export class Parse {
 	}
 
 	parse_vpos() {
-		var line = parse.line,
+		var line = abc.parse.line,
 			ty = 0;
 
-		if (a_dcn.length && a_dcn[a_dcn.length - 1] == 'dot') {
+		if (this.a_dcn.length && this.a_dcn[this.a_dcn.length - 1] == 'dot') {
 			ty = C.SL_DOTTED;
-			a_dcn.pop();
+			this.a_dcn.pop();
 		}
 		switch (line.next_char()) {
 			case "'":
@@ -1828,12 +1829,12 @@ export class Parse {
 		var i, s2, sl;
 
 		// go back and find the last start of slur
-		for (i = curvoice.sls.length; --i >= 0;) {
-			sl = curvoice.sls[i];
+		for (i = abc.curvoice.sls.length; --i >= 0;) {
+			sl = abc.curvoice.sls[i];
 
 			// the slur must not start and stop on a same symbol
 			if (sl.ss == s) continue;
-			curvoice.sls.splice(i, 1);
+			abc.curvoice.sls.splice(i, 1);
 			sl.se = s; // ending symbol
 			if (nt) sl.nte = nt;
 			s2 = sl.ss; // start of slur
@@ -1859,7 +1860,7 @@ export class Parse {
 				return;
 			}
 		}
-		//	syntax(1, "End of slur without start")
+		//	abc.syntax(1, "End of slur without start")
 		if (!s.sls) s.sls = [];
 		s.sls.push({
 			ty: C.SL_AUTO,
@@ -1873,8 +1874,8 @@ export class Parse {
 	pit2mid22(pit, acc) {
 		var p = [0, 2, 4, 5, 7, 9, 11][pit % 7],
 			o = ((pit / 7) | 0) * 12, p0, p1, s, b40
-		if (curvoice.snd_oct)
-			o += curvoice.snd_oct
+		if (abc.curvoice.snd_oct)
+			o += abc.curvoice.snd_oct
 		if (acc == 3)
 			acc = 0
 		if (acc) {
@@ -1887,22 +1888,22 @@ export class Parse {
 				s = acc;// simple accidental
 			}
 		} else {
-			if (cfmt.temper)
-				return cfmt.temper[abc2svg.p_b40[pit % 7]] + o
+			if (abc.cfmt.temper)
+				return abc.cfmt.temper[abc2svg.p_b40[pit % 7]] + o
 			return p + o
 		}
-		if (!cfmt.nedo) {
+		if (!abc.cfmt.nedo) {
 			// non equal temperament
-			if (!cfmt.temper) {
+			if (!abc.cfmt.temper) {
 				p += o + s;// standard temperament
 				return p
 			}
 		} else {
 			// equal temperament
-			p0 = cfmt.temper[abc2svg.p_b40[pit % 7]]
+			p0 = abc.cfmt.temper[abc2svg.p_b40[pit % 7]]
 			if (typeof acc != "object") {
 				b40 = abc2svg.p_b40[pit % 7] + acc
-				p1 = cfmt.temper[b40]
+				p1 = abc.cfmt.temper[b40]
 				if (s > 0) {
 					if (p1 < p0)
 						p1 += 12
@@ -1912,20 +1913,20 @@ export class Parse {
 				}
 				return p1 + o
 			}
-			if (acc[1] == cfmt.nedo) {
+			if (acc[1] == abc.cfmt.nedo) {
 				b40 = abc2svg.p_b40[pit % 7]
-				return cfmt.temper[b40] + o + s
+				return abc.cfmt.temper[b40] + o + s
 			}
 		}
-		p0 = cfmt.temper[abc2svg.p_b40[pit % 7]]// main note
+		p0 = abc.cfmt.temper[abc2svg.p_b40[pit % 7]]// main note
 		if (s > 0) {
 			// sharp
-			p1 = cfmt.temper[(abc2svg.p_b40[pit % 7] + 1) % 40]
+			p1 = abc.cfmt.temper[(abc2svg.p_b40[pit % 7] + 1) % 40]
 			if (p1 < p0)
 				p1 += 12
 		} else {
 			// flat
-			p1 = cfmt.temper[(abc2svg.p_b40[pit % 7] + 39) % 40]
+			p1 = abc.cfmt.temper[(abc2svg.p_b40[pit % 7] + 39) % 40]
 			if (p1 > p0)
 				p1 -= 12
 			s = -s
@@ -1943,7 +1944,7 @@ export class Parse {
 			mid,
 			g,
 			nt = 0,
-			se = tie_s.time + tie_s.dur == curvoice.time; // 'start-end' flag
+			se = tie_s.time + tie_s.dur == abc.curvoice.time; // 'start-end' flag
 
 		for (m = 0; m <= s.nhd; m++) {
 			not2 = s.notes[m];
@@ -1981,7 +1982,7 @@ export class Parse {
 			}
 		}
 
-		if (!nt) error(1, tie_s, 'Bad tie');
+		if (!nt) abc.error(1, tie_s, 'Bad tie');
 		else s.ti2 = true;
 	} // do_ties()
 
@@ -2005,36 +2006,36 @@ export class Parse {
 			chdur = 1,
 			dpit = 0,
 			sl1 = [],
-			line = parse.line,
-			a_dcn_sav = a_dcn; // save parsed decoration names
+			line = abc.parse.line,
+		this.a_dcn_sav = this.a_dcn; // save parsed decoration names
 
-		a_dcn = [];
-		parse.stemless = false;
+		this.a_dcn = [];
+		abc.parse.stemless = false;
 		s = {
 			type: C.NOTE,
-			fname: parse.fname,
+			fname: abc.parse.fname,
 			stem: 0,
 			multi: 0,
 			nhd: 0,
 			xmx: 0,
 		};
-		s.istart = parse.bol + line.index;
+		s.istart = abc.parse.bol + line.index;
 
-		if (curvoice.color) s.color = curvoice.color;
+		if (abc.curvoice.color) s.color = abc.curvoice.color;
 
 		if (grace) {
 			s.grace = true;
 		} else {
-			if (curvoice.tie_s) {
+			if (abc.curvoice.tie_s) {
 				// if tie from previous note / grace note
-				tie_s = curvoice.tie_s;
-				curvoice.tie_s = null;
+				tie_s = abc.curvoice.tie_s;
+				abc.curvoice.tie_s = null;
 			}
 			if (a_gch) csan_add(s);
-			if (parse.repeat_n) {
-				s.repeat_n = parse.repeat_n;
-				s.repeat_k = parse.repeat_k;
-				parse.repeat_n = 0;
+			if (abc.parse.repeat_n) {
+				s.repeat_n = abc.parse.repeat_n;
+				s.repeat_k = abc.parse.repeat_k;
+				abc.parse.repeat_n = 0;
 			}
 		}
 		c = line.char();
@@ -2045,11 +2046,11 @@ export class Parse {
 				s.type = C.MREST;
 				c = line.next_char();
 				s.nmeas = c > '0' && c <= '9' ? line.get_int() : 1;
-				if (curvoice.wmeasure == 1) {
-					error(1, s, 'multi-measure rest, but no measure!');
+				if (abc.curvoice.wmeasure == 1) {
+					abc.error(1, s, 'multi-measure rest, but no measure!');
 					return;
 				}
-				s.dur = curvoice.wmeasure * s.nmeas;
+				s.dur = abc.curvoice.wmeasure * s.nmeas;
 
 				// convert 'Z'/'Z1' to a whole measure rest
 				if (s.nmeas == 1) {
@@ -2065,7 +2066,7 @@ export class Parse {
 				} else {
 					glovar.mrest_p = true;
 					if (par_sy.voices.length == 1) {
-						s.tacet = curvoice.tacet;
+						s.tacet = abc.curvoice.tacet;
 						delete s.invis; // show the 'H' when 'Xn'
 					}
 				}
@@ -2078,7 +2079,7 @@ export class Parse {
 				if (c >= '0' && c <= '9') s.width = line.get_int();
 				else s.width = 10;
 				if (tie_s) {
-					curvoice.tie_s = tie_s;
+					abc.curvoice.tie_s = tie_s;
 					tie_s = null;
 				}
 				break;
@@ -2089,13 +2090,13 @@ export class Parse {
 				line.index++;
 				nd = parse_dur(line);
 				s.dur_orig =
-					((curvoice.ulen < 0 ? C.BLEN : curvoice.ulen) * nd[0]) / nd[1];
+					((abc.curvoice.ulen < 0 ? C.BLEN : abc.curvoice.ulen) * nd[0]) / nd[1];
 				if (s.dur_orig < 12) {
-					error(0, s, 'Bad note duration $1', s.dur_orig);
+					abc.error(0, s, 'Bad note duration $1', s.dur_orig);
 					s.dur_orig = 12;
 				}
-				s.dur = s.dur_orig * curvoice.dur_fact;
-				if (s.dur == curvoice.wmeasure) s.fmr = 1; // full measure rest
+				s.dur = s.dur_orig * abc.curvoice.dur_fact;
+				if (s.dur == abc.curvoice.wmeasure) s.fmr = 1; // full measure rest
 				s.notes = [
 					{
 						pit: 18,
@@ -2108,7 +2109,7 @@ export class Parse {
 				c = line.next_char();
 				i = line.buffer.indexOf(']', line.index);
 				if (i < 0) {
-					syntax(1, 'No end of chord');
+					abc.syntax(1, 'No end of chord');
 					return;
 				}
 				n = line.index; // save the parser index
@@ -2119,9 +2120,9 @@ export class Parse {
 				line.index = n; // restore the parser index
 			// fall thru
 			default: // accidental, chord, note
-				if (curvoice.acc_tie) {
-					acc_tie = curvoice.acc_tie;
-					curvoice.acc_tie = null;
+				if (abc.curvoice.acc_tie) {
+					acc_tie = abc.curvoice.acc_tie;
+					abc.curvoice.acc_tie = null;
 				}
 				s.notes = [];
 
@@ -2134,53 +2135,53 @@ export class Parse {
 							if (!c) break;
 							i = c.charCodeAt(0);
 							if (i >= 128) {
-								syntax(1, errs.not_ascii);
+								abc.syntax(1, abc.errs.not_ascii);
 								return; //null
 							}
-							ty = char_tb[i];
+							ty = this.char_tb[i];
 							switch (ty[0]) {
 								case '(':
-									sl1.push(parse_vpos());
+									sl1.push(this.parse_vpos());
 									c = line.char();
 									continue;
 								case '!':
-									if (ty.length > 1) a_dcn.push(ty.slice(1, -1));
-									else get_deco(); // line -> a_dcn
+									if (ty.length > 1) this.a_dcn.push(ty.slice(1, -1));
+									else get_deco(); // line -> this.a_dcn
 									c = line.next_char();
 									continue;
 							}
 							break;
 						}
 					}
-					note = parse_basic_note(
+					note = this.parse_basic_note(
 						line,
-						s.grace ? C.BLEN / 4 : curvoice.ulen < 0 ? C.BLEN : curvoice.ulen,
+						s.grace ? C.BLEN / 4 : abc.curvoice.ulen < 0 ? C.BLEN : abc.curvoice.ulen,
 					);
 					if (!note) return; //null
 
 					note.dur *= chdur; // chord factor
 					if (note.dur < 12) {
-						error(0, s, 'Bad note duration $1', note.dur);
+						abc.error(0, s, 'Bad note duration $1', note.dur);
 						note.dur = 12;
 					}
 
-					if (curvoice.octave) note.pit += curvoice.octave * 7;
+					if (abc.curvoice.octave) note.pit += abc.curvoice.octave * 7;
 
 					// get the real accidental
 					apit = note.pit + 19; // pitch from C-1
 					i = note.acc;
 					if (!i) {
-						if (cfmt['propagate-accidentals'][0] == 'p')
-							i = curvoice.acc[apit % 7];
-						else i = curvoice.acc[apit];
-						if (!i) i = curvoice.ckey.k_map[apit % 7] || 0;
+						if (abc.cfmt['propagate-accidentals'][0] == 'p')
+							i = abc.curvoice.acc[apit % 7];
+						else i = abc.curvoice.acc[apit];
+						if (!i) i = abc.curvoice.ckey.k_map[apit % 7] || 0;
 					}
 
-					if (i && !curvoice.ckey.k_drum) {
-						if (cfmt['propagate-accidentals'][0] == 'p')
-							curvoice.acc[apit % 7] = i;
-						else if (cfmt['propagate-accidentals'][0] != 'n')
-							curvoice.acc[apit] = i;
+					if (i && !abc.curvoice.ckey.k_drum) {
+						if (abc.cfmt['propagate-accidentals'][0] == 'p')
+							abc.curvoice.acc[apit % 7] = i;
+						else if (abc.cfmt['propagate-accidentals'][0] != 'n')
+							abc.curvoice.acc[apit] = i;
 					}
 
 					if (acc_tie && acc_tie[apit]) i = acc_tie[apit]; // tied note
@@ -2191,14 +2192,14 @@ export class Parse {
 						note.midi = pit2mid(apit, i);
 
 					// transpose
-					if (curvoice.tr_sco) {
-						set_map(curvoice, note, i, 1); // possible transpose?
+					if (abc.curvoice.tr_sco) {
+						set_map(abc.curvoice, note, i, 1); // possible transpose?
 						if (!note.notrp) {
 							// yes
 							i = nt_trans(note, i);
 							if (i == -3) {
 								// if triple sharp/flat
-								error(1, s, 'triple sharp/flat');
+								abc.error(1, s, 'triple sharp/flat');
 								i = note.acc > 0 ? 1 : -1;
 								note.pit += i;
 								note.acc = i;
@@ -2206,14 +2207,14 @@ export class Parse {
 							dpit = note.pit + 19 - apit;
 						}
 					}
-					if (curvoice.tr_snd) note.midi += curvoice.tr_snd;
-					if (curvoice.map) set_map(curvoice, note, i);
+					if (abc.curvoice.tr_snd) note.midi += abc.curvoice.tr_snd;
+					if (abc.curvoice.map) set_map(abc.curvoice, note, i);
 
 					//fixme: does not work if transposition
 					if (i) {
-						switch (cfmt['writeout-accidentals'][1]) {
+						switch (abc.cfmt['writeout-accidentals'][1]) {
 							case 'd': // added
-								s2 = curvoice.ckey;
+								s2 = abc.curvoice.ckey;
 								if (!s2.k_a_acc) break;
 								for (n = 0; n < s2.k_a_acc.length; n++) {
 									if ((s2.k_a_acc[n].pit - note.pit) % 7 == 0) {
@@ -2233,7 +2234,7 @@ export class Parse {
 						while (1) {
 							i = sl1.shift();
 							if (!i) break;
-							curvoice.sls.push({
+							abc.curvoice.sls.push({
 								ty: i,
 								ss: s,
 								nts: note, // starting note
@@ -2252,15 +2253,15 @@ export class Parse {
 								c = line.next_char();
 								continue;
 							case '-':
-								note.tie_ty = parse_vpos();
+								note.tie_ty = this.parse_vpos();
 								note.s = s;
-								curvoice.tie_s = s;
+								abc.curvoice.tie_s = s;
 								s.ti1 = true;
-								if (curvoice.acc[apit] || (acc_tie && acc_tie[apit])) {
-									if (!curvoice.acc_tie) curvoice.acc_tie = [];
-									i = curvoice.acc[apit];
+								if (abc.curvoice.acc[apit] || (acc_tie && acc_tie[apit])) {
+									if (!abc.curvoice.acc_tie) abc.curvoice.acc_tie = [];
+									i = abc.curvoice.acc[apit];
 									if (acc_tie && acc_tie[apit]) i = acc_tie[apit];
-									curvoice.acc_tie[apit] = i;
+									abc.curvoice.acc_tie[apit] = i;
 								}
 								c = line.char();
 								continue;
@@ -2269,16 +2270,16 @@ export class Parse {
 								switch (c) {
 									case '-':
 									case '(':
-										a_dcn.push('dot');
+										this.a_dcn.push('dot');
 										continue;
 								}
-								syntax(1, 'Misplaced dot');
+								abc.syntax(1, 'Misplaced dot');
 								break;
 						}
 						break;
 					}
-					if (a_dcn.length) {
-						s.time = curvoice.time; // (needed for !tie)!
+					if (this.a_dcn.length) {
+						s.time = abc.curvoice.time; // (needed for !tie)!
 						dh_cnv(s, note);
 					}
 
@@ -2294,22 +2295,22 @@ export class Parse {
 					while (1) {
 						i = sls.shift();
 						if (!i) break;
-						curvoice.sls.push({
+						abc.curvoice.sls.push({
 							ty: i,
 							ss: s,
 							// no starting note
 						});
-						if (grace) curvoice.sls[curvoice.sls.length - 1].grace = grace;
+						if (grace) abc.curvoice.sls[abc.curvoice.sls.length - 1].grace = grace;
 					}
 				}
 
 				// the duration of the chord is the duration of the 1st note
 				s.dur_orig = s.notes[0].dur;
-				s.dur = s.notes[0].dur * curvoice.dur_fact;
+				s.dur = s.notes[0].dur * abc.curvoice.dur_fact;
 				break;
 		}
 		if (s.grace && s.type != C.NOTE) {
-			syntax(1, errs.bad_grace);
+			abc.syntax(1, abc.errs.bad_grace);
 			return; //null
 		}
 
@@ -2324,10 +2325,10 @@ export class Parse {
 					i++;
 				}
 				if ((n + 1) & n)
-					error(0, s, 'Non standard note duration $1', n + '/' + (1 << (6 - i)));
+					abc.error(0, s, 'Non standard note duration $1', n + '/' + (1 << (6 - i)));
 			}
 			if (!grace) {
-				switch (curvoice.pos.stm & 0x07) {
+				switch (abc.curvoice.pos.stm & 0x07) {
 					case C.SL_ABOVE:
 						s.stem = 1;
 						break;
@@ -2340,10 +2341,10 @@ export class Parse {
 				}
 
 				// adjust the symbol duration
-				num = curvoice.brk_rhythm;
+				num = abc.curvoice.brk_rhythm;
 				if (num) {
-					curvoice.brk_rhythm = 0;
-					s2 = curvoice.last_note;
+					abc.curvoice.brk_rhythm = 0;
+					s2 = abc.curvoice.last_note;
 					if (num > 0) {
 						n = num * 2 - 1;
 						s.dur = (s.dur * n) / num;
@@ -2364,21 +2365,21 @@ export class Parse {
 						for (i = 0; i <= s2.nhd; i++)
 							s2.notes[i].dur = (s2.notes[i].dur * n) / num;
 					}
-					curvoice.time = s2.time + s2.dur;
+					abc.curvoice.time = s2.time + s2.dur;
 
 					// adjust the time of the grace notes, bars...
-					for (s2 = s2.next; s2; s2 = s2.next) s2.time = curvoice.time;
+					for (s2 = s2.next; s2; s2 = s2.next) s2.time = abc.curvoice.time;
 				}
 			} else {
 				/* grace note - adjust its duration */
-				div = curvoice.ckey.k_bagpipe ? 8 : 4;
+				div = abc.curvoice.ckey.k_bagpipe ? 8 : 4;
 				for (i = 0; i <= s.nhd; i++) s.notes[i].dur /= div;
 				s.dur /= div;
 				s.dur_orig /= div;
 				if (grace.stem) s.stem = grace.stem;
 			}
 
-			curvoice.last_note = s;
+			abc.curvoice.last_note = s;
 
 			// get the possible ties and end of slurs
 			c = line.char();
@@ -2386,28 +2387,28 @@ export class Parse {
 				switch (c) {
 					case '.':
 						if (line.buffer[line.index + 1] != '-') break;
-						a_dcn.push('dot');
+						this.a_dcn.push('dot');
 						line.index++;
 					// fall thru
 					case '-':
-						ty = parse_vpos();
+						ty = this.parse_vpos();
 						for (i = 0; i <= s.nhd; i++) {
 							s.notes[i].tie_ty = ty;
 							s.notes[i].s = s;
 						}
-						curvoice.tie_s = grace || s;
-						curvoice.tie_s.ti1 = true;
+						abc.curvoice.tie_s = grace || s;
+						abc.curvoice.tie_s.ti1 = true;
 						for (i = 0; i <= s.nhd; i++) {
 							note = s.notes[i];
 							apit =
 								note.pit +
 								19 - // pitch from C-1
 								dpit; // (if transposition)
-							if (curvoice.acc[apit] || (acc_tie && acc_tie[apit])) {
-								if (!curvoice.acc_tie) curvoice.acc_tie = [];
-								n = curvoice.acc[apit];
+							if (abc.curvoice.acc[apit] || (acc_tie && acc_tie[apit])) {
+								if (!abc.curvoice.acc_tie) abc.curvoice.acc_tie = [];
+								n = abc.curvoice.acc[apit];
 								if (acc_tie && acc_tie[apit]) n = acc_tie[apit];
-								curvoice.acc_tie[apit] = n;
+								abc.curvoice.acc_tie[apit] = n;
 							}
 						}
 						c = line.char();
@@ -2425,17 +2426,17 @@ export class Parse {
 		sym_link(s);
 
 		if (!grace) {
-			if (!curvoice.lyric_restart) curvoice.lyric_restart = s;
-			if (!curvoice.sym_restart) curvoice.sym_restart = s;
+			if (!abc.curvoice.lyric_restart) abc.curvoice.lyric_restart = s;
+			if (!abc.curvoice.sym_restart) abc.curvoice.sym_restart = s;
 		}
 
-		if (a_dcn_sav.length) {
-			a_dcn = a_dcn_sav;
+		if (this.a_dcn_sav.length) {
+			this.a_dcn = this.a_dcn_sav;
 			deco_cnv(s, s.prev);
 		}
 		if (grace && s.ottava) grace.ottava = s.ottava;
-		if (parse.stemless) s.stemless = true;
-		s.iend = parse.bol + line.index;
+		if (abc.parse.stemless) s.stemless = true;
+		s.iend = abc.parse.bol + line.index;
 		return s;
 	};
 
@@ -2443,10 +2444,10 @@ export class Parse {
 	tp_adj(s, fact) {
 		var d,
 			tim = s.time,
-			to = curvoice.time - tim, // previous delta time
+			to = abc.curvoice.time - tim, // previous delta time
 			tt = to * fact; // new delta time
 
-		curvoice.time = tim + tt;
+		abc.curvoice.time = tim + tt;
 		while (1) {
 			//fixme: tuplets in grace notes?
 			s.in_tuplet = true;
@@ -2472,7 +2473,7 @@ export class Parse {
 	// get a decoration
 	get_deco() {
 		var c,
-			line = parse.line,
+			line = abc.parse.line,
 			i = line.index, // in case no deco end
 			dcn = '';
 
@@ -2480,13 +2481,13 @@ export class Parse {
 			c = line.next_char();
 			if (!c) {
 				line.index = i;
-				syntax(1, 'No end of decoration');
+				abc.syntax(1, 'No end of decoration');
 				return;
 			}
 			if (c == '!') break;
 			dcn += c;
 		}
-		a_dcn.push(dcn);
+		this.a_dcn.push(dcn);
 	} // get_deco()
 
 	// characters in the music line (ASCII only)
@@ -2620,19 +2621,19 @@ export class Parse {
 		'}',
 		'!gmark!',
 		nil /* | } ~ (del) */,
-	]; // char_tb[]
+	]; //this.char_tb[]
 
 	parse_music_line() {
 		var grace,
 			last_note_sav,
-			a_dcn_sav,
+		this.a_dcn_sav,
 			no_eol,
 			s,
 			tps,
 			tp = [],
 			tpn = -1,
 			sls = [],
-			line = parse.line;
+			line = abc.parse.line;
 
 		// check if a transposing macro matches a source sequence
 		// if yes return the base note
@@ -2702,51 +2703,51 @@ export class Parse {
 				curv,
 				s,
 				line_sav = line,
-				istart_sav = parse.istart;
+				istart_sav = abc.parse.istart;
 
-			parse.line = line = new scanBuf();
-			parse.istart += line_sav.index;
+			abc.parse.line = line = new ScanBuf();
+			abc.parse.istart += line_sav.index;
 
 			// if the macro is not displayed
-			if (cfmt.writefields.indexOf('m') < 0) {
+			if (abc.cfmt.writefields.indexOf('m') < 0) {
 
 				// build the display sequence from the original sequence
 				line.buffer = k.replace('n', n2n(b));
-				s = curvoice.last_sym;
-				ti = curvoice.time; // start time
+				s = abc.curvoice.last_sym;
+				ti = abc.curvoice.time; // start time
 				parse_seq(true);
-				if (!s) s = curvoice.sym;
+				if (!s) s = abc.curvoice.sym;
 				for (s = s.next; s; s = s.next) s.noplay = true;
-				te = curvoice.time; // end time
-				curv = curvoice;
+				te = abc.curvoice.time; // end time
+				curv = abc.curvoice;
 
 				// and put the macro sequence in a play specific voice
-				curvoice = clone_voice(curv.id + '-p');
-				if (!par_sy.voices[curvoice.v]) {
-					curvoice.second = true;
-					par_sy.voices[curvoice.v] = {
+				abc.curvoice.= Abc.clone_voice(curv.id + '-p');
+				if (!par_sy.voices[abc.curvoice.v]) {
+					abc.curvoice.second = true;
+					par_sy.voices[abc.curvoice.v] = {
 						st: curv.st,
 						second: true,
-						range: curvoice.v,
+						range: abc.curvoice.v,
 					};
 				}
-				curvoice.time = ti;
-				s = curvoice.last_sym;
-				parse.line = line = new scanBuf();
-				parse.istart += line_sav.index;
+				abc.curvoice.time = ti;
+				s = abc.curvoice.last_sym;
+				abc.parse.line = line = new scanBuf();
+				abc.parse.istart += line_sav.index;
 				line.buffer = expand(m, b);
 				parse_seq(true);
-				if (curvoice.time != te) syntax(1, 'Bad length of the macro sequence');
-				if (!s) s = curvoice.sym;
+				if (abc.curvoice.time != te) abc.syntax(1, 'Bad length of the macro sequence');
+				if (!s) s = abc.curvoice.sym;
 				for (; s; s = s.next) s.invis = s.play = true;
-				curvoice = curv;
+				abc.curvoice.= curv;
 			} else {
 				line.buffer = expand(m, b);
 				parse_seq(true);
 			}
 
-			parse.line = line = line_sav;
-			parse.istart = istart_sav;
+			abc.parse.line = line = line_sav;
+			abc.parse.istart = istart_sav;
 		} // parse_mac()
 
 		// parse a music sequence
@@ -2778,27 +2779,27 @@ export class Parse {
 
 				idx = c.charCodeAt(0);
 				if (idx >= 128) {
-					syntax(1, errs.not_ascii);
+					abc.syntax(1, abc.errs.not_ascii);
 					line.index++;
 					break;
 				}
 
-				type = char_tb[idx];
+				type = this.char_tb[idx];
 				switch (type[0]) {
 					case ' ': // beam break
-						s = curvoice.last_note;
+						s = abc.curvoice.last_note;
 						if (s) {
 							s.beam_end = true;
 							if (grace) grace.gr_shift = true;
 						}
 						break;
 					case '\n': // line break
-						if (cfmt.barsperstaff) break;
-						curvoice.eoln = true;
+						if (abc.cfmt.barsperstaff) break;
+						abc.curvoice.eoln = true;
 						break;
 					case '&': // voice overlay
 						if (grace) {
-							syntax(1, errs.bad_grace);
+							abc.syntax(1, abc.errs.bad_grace);
 							break;
 						}
 						c = line.next_char();
@@ -2813,7 +2814,7 @@ export class Parse {
 						if (c > '0' && c <= '9') {
 							// tuplet
 							if (grace) {
-								syntax(1, errs.bad_grace);
+								abc.syntax(1, abc.errs.bad_grace);
 								break;
 							}
 							var pplet = line.get_int(),
@@ -2833,37 +2834,37 @@ export class Parse {
 										rplet = line.get_int();
 										c = line.char();
 									} else {
-										syntax(1, "Invalid 'r' in tuplet");
+										abc.syntax(1, "Invalid 'r' in tuplet");
 										continue;
 									}
 								}
 							}
 							if (qplet == 0 || qplet == undefined)
-								qplet = curvoice.wmeasure % 9 == 0 ? 3 : 2;
+								qplet = abc.curvoice.wmeasure % 9 == 0 ? 3 : 2;
 							if (tpn < 0) tpn = tp.length; // new tuplet
 							tp.push({
 								p: pplet,
 								q: qplet,
 								r: rplet,
 								ro: rplet,
-								f: curvoice.tup || cfmt.tuplets,
+								f: abc.curvoice.tup || abc.cfmt.tuplets,
 							});
 							continue;
 						}
 						if (c == '&') {
 							// voice overlay start
 							if (grace) {
-								syntax(1, errs.bad_grace);
+								abc.syntax(1, abc.errs.bad_grace);
 								break;
 							}
 							get_vover('(');
 							break;
 						}
 						line.index--;
-						sls.push(parse_vpos());
+						sls.push(this.parse_vpos());
 						continue;
 					case ')': // slur end
-						s = curvoice.last_sym;
+						s = abc.curvoice.last_sym;
 						if (s) {
 							switch (s.type) {
 								case C.SPACE:
@@ -2885,7 +2886,7 @@ export class Parse {
 							}
 						}
 						if (!s) {
-							syntax(1, errs.bad_char, c);
+							abc.syntax(1, abc.errs.bad_char, c);
 							break;
 						}
 						slur_add(s);
@@ -2893,12 +2894,12 @@ export class Parse {
 					case '!': // start of decoration
 						if (type.length > 1)
 							// decoration letter
-							a_dcn.push(type.slice(1, -1));
-						else get_deco(); // (line -> a_dcn)
+							this.a_dcn.push(type.slice(1, -1));
+						else get_deco(); // (line -> this.a_dcn)
 						break;
 					case '"':
 						if (grace) {
-							syntax(1, errs.bad_grace);
+							abc.syntax(1, abc.errs.bad_grace);
 							break;
 						}
 						parse_gchord(type);
@@ -2916,7 +2917,7 @@ export class Parse {
 							(c_next >= '1' && c_next <= '9')
 						) {
 							if (grace) {
-								syntax(1, errs.bar_grace);
+								abc.syntax(1, abc.errs.bar_grace);
 								break;
 							}
 							new_bar();
@@ -2924,18 +2925,18 @@ export class Parse {
 						}
 						if (line.buffer[line.index + 2] == ':') {
 							if (grace) {
-								syntax(1, errs.bad_grace);
+								abc.syntax(1, abc.errs.bad_grace);
 								break;
 							}
 							i = line.buffer.indexOf(']', line.index + 1);
 							if (i < 0) {
-								syntax(1, "Lack of ']'");
+								abc.syntax(1, "Lack of ']'");
 								break;
 							}
 							text = line.buffer.slice(line.index + 3, i).trim();
 
-							parse.istart = parse.bol + line.index;
-							parse.iend = parse.bol + ++i;
+							abc.parse.istart = abc.parse.bol + line.index;
+							abc.parse.iend = abc.parse.bol + ++i;
 							line.index = 0;
 							do_info(c_next, text);
 							line.index = i;
@@ -2978,12 +2979,12 @@ export class Parse {
 						}
 						continue;
 					case '<' /* '<' and '>' */:
-						if (!curvoice.last_note) {
-							syntax(1, "No note before '<'");
+						if (!abc.curvoice.last_note) {
+							abc.syntax(1, "No note before '<'");
 							break;
 						}
 						if (grace) {
-							syntax(1, 'Cannot have a broken rhythm in grace notes');
+							abc.syntax(1, 'Cannot have a broken rhythm in grace notes');
 							break;
 						}
 						n = c == '<' ? 1 : -1;
@@ -2991,28 +2992,28 @@ export class Parse {
 							n *= 2;
 							c = line.next_char();
 						}
-						curvoice.brk_rhythm = n;
+						abc.curvoice.brk_rhythm = n;
 						continue;
 					case 'i': // ignore
 						break;
 					case '{':
 						if (grace) {
-							syntax(1, "'{' in grace note");
+							abc.syntax(1, "'{' in grace note");
 							break;
 						}
-						last_note_sav = curvoice.last_note;
-						curvoice.last_note = null;
-						a_dcn_sav = a_dcn;
-						a_dcn = [];
+						last_note_sav = abc.curvoice.last_note;
+						abc.curvoice.last_note = null;
+						this.a_dcn_sav = this.a_dcn;
+						this.a_dcn = [];
 						grace = {
 							type: C.GRACE,
-							fname: parse.fname,
-							istart: parse.bol + line.index,
+							fname: abc.parse.fname,
+							istart: abc.parse.bol + line.index,
 							dur: 0,
 							multi: 0,
 						};
-						if (curvoice.color) grace.color = curvoice.color;
-						switch (curvoice.pos.gst & 0x07) {
+						if (abc.curvoice.color) grace.color = abc.curvoice.color;
+						switch (abc.curvoice.pos.gst & 0x07) {
 							case C.SL_ABOVE:
 								grace.stem = 1;
 								break;
@@ -3032,37 +3033,37 @@ export class Parse {
 						continue;
 					case '|':
 						if (grace) {
-							syntax(1, errs.bar_grace);
+							abc.syntax(1, abc.errs.bar_grace);
 							break;
 						}
 						new_bar();
 						continue;
 					case '}':
-						if (curvoice.ignore) {
+						if (abc.curvoice.ignore) {
 							grace = null;
 							break;
 						}
-						s = curvoice.last_note;
+						s = abc.curvoice.last_note;
 						if (!grace || !s) {
-							syntax(1, errs.bad_char, c);
+							abc.syntax(1, abc.errs.bad_char, c);
 							break;
 						}
-						if (a_dcn.length) syntax(1, 'Decoration ignored');
+						if (this.a_dcn.length) abc.syntax(1, 'Decoration ignored');
 						grace.extra = grace.next;
 						grace.extra.prev = null;
 						grace.next = null;
-						curvoice.last_sym = grace;
+						abc.curvoice.last_sym = grace;
 						grace = null;
 						if (
 							!s.prev && // if one grace note
-							!curvoice.ckey.k_bagpipe
+							!abc.curvoice.ckey.k_bagpipe
 						) {
 							for (i = 0; i <= s.nhd; i++) s.notes[i].dur *= 2;
 							s.dur *= 2;
 							s.dur_orig *= 2;
 						}
-						curvoice.last_note = last_note_sav;
-						a_dcn = a_dcn_sav;
+						abc.curvoice.last_note = last_note_sav;
+						this.a_dcn = this.a_dcn_sav;
 						break;
 					case '\\':
 						if (!line.buffer[line.index + 1]) {
@@ -3071,47 +3072,47 @@ export class Parse {
 						}
 					// fall thru
 					default:
-						syntax(1, errs.bad_char, c);
+						abc.syntax(1, abc.errs.bad_char, c);
 						break;
 				}
 				line.index++;
 			}
 		} // parse_seq()
 
-		if (parse.state != 3)
+		if (abc.parse.state != 3)
 			// if not in tune body
 			return;
 
-		if (parse.tp) {
-			tp = parse.tp;
-			tpn = parse.tpn;
-			tps = parse.tps;
-			parse.tp = null;
+		if (abc.parse.tp) {
+			tp = abc.parse.tp;
+			tpn = abc.parse.tpn;
+			tps = abc.parse.tps;
+			abc.parse.tp = null;
 		}
 
 		parse_seq();
 
 		if (tp.length) {
-			parse.tp = tp;
-			parse.tps = tps;
-			parse.tpn = tpn;
+			abc.parse.tp = tp;
+			abc.parse.tps = tps;
+			abc.parse.tpn = tpn;
 		}
-		if (sls.length) syntax(1, 'Start of slur without note');
+		if (sls.length) abc.syntax(1, 'Start of slur without note');
 		if (grace) {
-			syntax(1, 'No end of grace note sequence');
-			curvoice.last_sym = grace.prev;
-			curvoice.last_note = last_note_sav;
+			abc.syntax(1, 'No end of grace note sequence');
+			abc.curvoice.last_sym = grace.prev;
+			abc.curvoice.last_note = last_note_sav;
 			if (grace.prev) grace.prev.next = null;
 		}
 		if (
 			!no_eol &&
-			!cfmt.barsperstaff &&
+			!abc.cfmt.barsperstaff &&
 			!vover &&
-			char_tb['\n'.charCodeAt(0)] == '\n'
+			this.char_tb['\n'.charCodeAt(0)] == '\n'
 		)
-			curvoice.eoln = true;
-		if (curvoice.eoln && cfmt.breakoneoln && curvoice.last_note)
-			curvoice.last_note.beam_end = true;
+			abc.curvoice.eoln = true;
+		if (abc.curvoice.eoln && abc.cfmt.breakoneoln && abc.curvoice.last_note)
+			abc.curvoice.last_note.beam_end = true;
 	}
 
 }

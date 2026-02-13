@@ -1,21 +1,22 @@
 // abc2svg - Gchord module
-import type { Abc } from '../Abc';
+import { Abc, nil } from '../Abc';
 import * as abc2svg from '../abc2svg';
-
+import { C } from '../abc2svg';
+import { Amusic, Aparser, Adeco, Adraw, Asvg, Asubs, Atune, Aformat, Afront, Alyrics, Agchord } from '../Store';
+let abc: Abc;
 export class Gchord {
-	abc: Abc;
 	a_gch: any[] | null = null; // Global accumulator for gchords
 
-	constructor(abc: Abc) {
-		this.abc = abc;
+	constructor(abc_: Abc) {
+		abc = abc_;
 	}
 	// -- parse a chord symbol / annotation --
 	parse_gchord(type: string) {
 		let c, text: string, gch, x_abs: number = 0, y_abs: number = 0,
 			i: number, j, istart, iend,
-			ann_font = this.abc.get_font("annotation"),
+			ann_font = abc.get_font("annotation"),
 			h_ann = ann_font.size,
-			line = this.abc.parse.line;
+			line = abc.parse.line;
 
 		// Helper to get float from text
 		const get_float = () => {
@@ -29,7 +30,7 @@ export class Gchord {
 			return 0; // Should not reach here
 		};
 
-		istart = this.abc.parse.bol + line.index;
+		istart = abc.parse.bol + line.index;
 		if (type.length > 1) {			// U:
 			text = type.slice(1, -1);
 			iend = istart + 1;
@@ -38,7 +39,7 @@ export class Gchord {
 			while (1) {
 				j = line.buffer.indexOf('"', i);
 				if (j < 0) {
-					this.abc.syntax(1, "No end of chord symbol/annotation");
+					abc.syntax(1, "No end of chord symbol/annotation");
 					return;
 				}
 				if (line.buffer[j - 1] != '\\'
@@ -46,11 +47,11 @@ export class Gchord {
 					break;
 				i = j + 1;
 			}
-			// this.abc.cnv_escape ... assuming utility exists or implementing simplified
+			// abc.cnv_escape ... assuming utility exists or implementing simplified
 			text = line.buffer.slice(line.index, j); // Simplified for refactor
 			// text = cnv_escape(text); 
 			line.index = j;
-			iend = this.abc.parse.bol + line.index + 1;
+			iend = abc.parse.bol + line.index + 1;
 		}
 
 		if (ann_font.pad)
@@ -59,7 +60,7 @@ export class Gchord {
 		type = 'g';
 
 		let C = abc2svg.C;
-		let curvoice = this.abc.curvoice;
+		let abc.curvoice = abc.curvoice;
 
 		while (1) {
 			c = text[i];
@@ -80,7 +81,7 @@ export class Gchord {
 					i++;
 					x_abs = get_float();
 					if ((c as string) != ',') {
-						this.abc.syntax(1, "',' lacking in annotation '@x,y'");
+						abc.syntax(1, "',' lacking in annotation '@x,y'");
 						y_abs = 0;
 					} else {
 						y_abs = get_float() || 0;
@@ -103,8 +104,8 @@ export class Gchord {
 				default:
 					switch (type) {
 						case 'g':
-							gch.font = this.abc.get_font("gchord");
-							gch.pos = curvoice.pos.gch || C.SL_ABOVE;
+							gch.font = abc.get_font("gchord");
+							gch.pos = abc.curvoice.pos.gch || C.SL_ABOVE;
 							break;
 						case '^':
 							gch.pos = C.SL_ABOVE;
@@ -140,7 +141,7 @@ export class Gchord {
 	csan_add(s: any) {
 		let i, gch;
 		let C = abc2svg.C;
-		let curvoice = this.abc.curvoice;
+		let abc.curvoice = abc.curvoice;
 
 		if (!this.a_gch) return;
 
@@ -148,18 +149,18 @@ export class Gchord {
 		if (s.type == C.BAR) {
 			for (i = 0; i < this.a_gch.length; i++) {
 				if (this.a_gch[i].type == 'g') {
-					this.abc.error(1, s, "There cannot be chord symbols on measure bars");
+					abc.error(1, s, "There cannot be chord symbols on measure bars");
 					this.a_gch.splice(i, 1);
 				}
 			}
 		}
 
-		if (curvoice.tr_sco || curvoice.tr_snd) {
+		if (abc.curvoice.tr_sco || abc.curvoice.tr_snd) {
 			for (i = 0; i < this.a_gch.length; i++) {
 				gch = this.a_gch[i];
 				if (gch.type == 'g') {
-					if (curvoice.tr_snd40) gch.otext = gch_tr1(gch.text, curvoice.tr_snd40);
-					if (curvoice.tr_sco) gch.text = gch_tr1(gch.text, curvoice.tr_sco);
+					if (abc.curvoice.tr_snd40) gch.otext = gch_tr1(gch.text, abc.curvoice.tr_snd40);
+					if (abc.curvoice.tr_sco) gch.text = gch_tr1(gch.text, abc.curvoice.tr_sco);
 				}
 			}
 		}

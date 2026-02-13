@@ -1,4 +1,4 @@
-import { Parse } from './modules/Parse';
+import { Parser } from './modules/Parser';
 import { Music } from './modules/Music';
 import { Deco } from './modules/Deco';
 import { Draw } from './modules/Draw';
@@ -14,13 +14,19 @@ import * as abc2svg from './abc2svg';
 export class Abc {
 	user: any;
 	self: Abc;
+	block: any;
 	// Core state (mapped from original glovar/info)
 	glovar: {
 		meter: {
 			type: number;
 			wmeasure: number;
 			a_meter: any[];
-		}
+		},
+		mrest_p: boolean;
+		tempo: any;
+		new_nbar: number;
+		ulen: number;
+		ottava: number;
 	};
 	info: any; // information fields
 	parse: {
@@ -37,6 +43,11 @@ export class Abc {
 		fname?: string;
 		istart?: number;
 		iend?: number;
+		file?: string;
+		ckey?: any;
+		select?: any;
+		score?: any;
+		pq?: any;
 	};
 	tunes: any[]; // first time symbol and voice array per tune for playing
 	psvg: any; // PostScript
@@ -47,6 +58,8 @@ export class Abc {
 	par_sy: any;
 	cur_sy: any;
 	tsfirst: any;
+
+	a_dcn: string[] = [];
 
 	// Formatting and Layout
 	cfmt: any = {};
@@ -84,28 +97,18 @@ export class Abc {
 		notransp: "Cannot transpose with a temperament"
 	};
 
-	// Helper to create a new block/symbol
-	new_block(text: string) {
-		return this.parser.new_block(text);
-	}
-
-	get_glyphs() {
-		return this.svg.defined_glyph;
-	}
-
-
 	// Hooks
 	hooks: any = {};
 
 	// Modules
 	music: Music;
-	parser: Parse;
+	parser: Parser;
 	deco: Deco;
 	draw: Draw;
 	svg: Svg;
 	subs: Subs;
 	tune: Tune;
-	formatter: Format;
+	format: Format;
 	front: Front;
 	lyrics: Lyrics;
 	gchord: Gchord;
@@ -115,12 +118,12 @@ export class Abc {
 		this.self = this;
 		this.svg = new Svg(this); // Svg might rely on defaults, init first
 		this.music = new Music(this);
-		this.parser = new Parse(this);
+		this.parser = new Parser(this);
 		this.deco = new Deco(this);
 		this.draw = new Draw(this);
 		this.subs = new Subs(this); // Initialize Subs
 		this.tune = new Tune(this); // Initialize Tune
-		this.formatter = new Format(this); // Initialize Format
+		this.format = new Format(this); // Initialize Format
 		this.front = new Front(this); // Initialize Front
 		this.lyrics = new Lyrics(this); // Initialize Lyrics
 		this.gchord = new Gchord(this); // Initialize Gchord
@@ -149,6 +152,11 @@ export class Abc {
 		};
 		this.tunes = [];
 		this.voice_tb = [];
+
+		// initialize
+		this.tune.init_tune();
+		this.clr_sty = () => this.svg.clr_sty;
+		this.defs_add = () => this.svg.defs_add;
 	}
 
 	// Utilities
@@ -180,7 +188,7 @@ export class Abc {
 		if (idx != undefined && idx >= 0) {
 			i = l = 0
 			while (1) {
-				j = this.parse.file.indexOf('\n', i)
+				j = this.parse.file?.indexOf('\n', i)
 				if (j < 0 || j > idx)
 					break
 				l++;
@@ -233,23 +241,14 @@ export class Abc {
 			this.errbld(sev, msg)
 	}
 
-	syntax(sev: number, msg: string, a1: string, a2: string, a3: string, a4: string) {
-		var s = {
-			fname: this.parse.fname,
-			istart: this.parse.istart + this.parse.line.index
-		}
-
-		this.error(sev, s, msg, a1, a2, a3, a4)
-	}
 	// inject javascript code
 	js_inject(js: string) {
 		eval('"use strict";\n' + js);
 	}
 
-
 	// Forwarding methods
 	set_format(cmd: string, param: string) {
-		this.formatter.set_format(cmd, param);
+		this.format.set_format(cmd, param);
 	}
 
 	tosvg(file: string, in_fname: string) {
@@ -266,27 +265,6 @@ export class Abc {
 
 	parse_gchord(type: string) {
 		this.gchord.parse_gchord(type);
-	}
-
-	csan_add(s: any) {
-		this.gchord.csan_add(s);
-	}
-
-	// Font delegates
-	get_font(name: string) {
-		// In the original, get_font was global or on Abc prototype.
-		// It returns a font object. 
-		// For now, return a dummy object or check if Format has it.
-		return this.formatter.get_font(name);
-	}
-
-	set_font(font: any) {
-		this.subs.set_font(font);
-		// this.formatter.set_font_obj(font); // hypothetical
-	}
-
-	gch_tr1(p: string, tr: number) {
-		return this.gchord.gch_tr1(p, tr);
 	}
 
 	// Hookable methods
@@ -334,6 +312,8 @@ export class Abc {
 
 	// SVG Delegate methods
 	out_svg(str: string) { this.svg.out_svg(str); }
+	get output() { return this.svg.output; }
+	set output(str: string) { this.svg.output = str; }
 	sx(x: number) { return this.svg.sx(x); }
 	sy(y: number) { return this.svg.sy(y); }
 	sh(h: number) { return this.svg.sh(h); }
@@ -354,30 +334,102 @@ export class Abc {
 		// Ensure to handle if text is a command
 	}
 
-	// Helpers
-	get_bool(val: any) {
-		if (val === 'false' || val === '0' || val === 0) return false;
-		return !!val;
-	}
-
-	set_v_param(key: string, val: any) {
-		// Placeholder for set_v_param. Likely on voice definition.
-		if (this.curvoice) this.curvoice[key] = val;
-	}
-
 	// Delegates
 	get stv_g() { return this.svg.stv_g; }
 
+	// Abc functions used by the modules
+	a_de = () => this.deco.a_de
+	add_style = (s: string) => { this.svg.style += s };
+
+	clr_sty = () => this.svg.clr_sty;
 	// Deco delegates
 	deco_put(nm: string, s: any) {
-		this.deco.deco_put(nm, s);
+		this.parser.a_dcn.push(nm);
+		this.deco.deco_cnv(s);
 	}
 
-	// State accessors
-	get_cur_sy() { return this.cur_sy; }
-	get_voice_tb() { return this.voice_tb; }
-	get_staff_tb() { return this.staff_tb; }
-	get_tsfirst() { return this.tsfirst; }
+	defs_add = () => this.svg.defs_add;
+	dh_put = (nm: string, s: any, nt: any) => {
+		this.parser.a_dcn.push(nm)
+		this.deco.dh_cnv(s, nt)
+	}
+	draw_meter = () => this.draw.draw_meter;
+	draw_note = () => this.draw.draw_note;
+	font_class = () => this.font_class;
+	gch_tr1 = () => this.gchord.gch_tr1;
+	get_bool = () => this.format.get_bool;
+	get_cur_sy = () => this.cur_sy;
+	get_curvoice = () => this.curvoice;
+	get_delta_tb = () => this.music.delta_tb;
+	get_decos = () => this.deco.decos;
+	// Font delegates
+	get_font = () => this.format.get_font;
+
+	get_font_style = () => this.svg.font_style;
+	get_glyphs = () => this.svg.glyphs;
+	get_img = () => this.svg.img;
+	get_lwidth = () => this.subs.get_lwidth;
+	get_maps = () => this.parser.maps;
+	get_multi = () => this.parser.multicol;
+	get_newpage = () => {
+		if (this.block.newpage) {
+			this.block.newpage = false;
+			return true
+		}
+	};
+	get_parse = () => this.parse
+	get_posy = () => this.svg.posy
+	get_staff_tb = () => this.staff_tb
+	get_top_v = () => this.par_sy.top_voice
+	get_tsfirst = () => this.tsfirst
+	get_unit = () => this.format.get_unit;
+	get_user = () => this.user
+	get_voice_tb = () => this.voice_tb;
+	glout = () => this.svg.glout;
+	//Abc.prototype.info 
+	// Helper to create a new block/symbol
+	new_block = () => this.parser.new_block
+	out_arp = () => this.svg.out_arp;
+	out_deco_str = () => this.svg.out_deco_str;
+	out_deco_val = () => this.svg.out_deco_val;
+	out_ltr = () => this.svg.out_ltr;
+	param_set_font = () => this.format.param_set_font;
+	part_seq = () => this.subs.part_seq
+	psdeco = () => this.svg.empty_function;
+	psxygl = () => this.svg.empty_function;
+	set_cur_sy = (sy) => { this.cur_sy = sy };
+	set_curvoice = (p_v) => { this.curvoice = p_v }
+	set_dscale = () => this.svg.set_dscale;
+	set_font = () => this.subs.set_font;
+	set_a_gch = (s, a) => { this.gchord.a_gch = a; this.gchord.csan_add(s) }
+	set_hl = () => this.draw.set_hl
+	set_map = () => this.parser.set_map
+	set_page = () => this.format.set_page
+	set_pagef = () => { this.svg.blkdiv = 1 }
+	set_realwidth = (v) => { this.realwidth = v }
+	set_scale = () => this.svg.set_scale
+	set_sscale = () => this.svg.set_sscale
+	set_tsfirst = (s: any) => { this.tsfirst = s };
+	set_v_param = () => this.format.set_v_param;
+	str2svg = () => this.subs.str2svg
+	strwh = () => this.subs.strwh
+	svg_flush = () => this.svg.svg_flush
+
+	syntax(sev: number, msg: string, a1?: string, a2?: string, a3?: string, a4?: string) {
+		var s = {
+			fname: this.parse.fname,
+			istart: this.parse.istart + this.parse.line.index
+		}
+		this.error(sev, s, msg, a1, a2, a3, a4)
+	}
+	unlksym = () => this.music.unlksym
+	use_font = () => this.format.use_font
+	vskip = (h: number) => this.svg.vskip(h)
+	xy_str = (x: number, y: number, str: string) => this.subs.xy_str(x, y, str)
+	xygl = (x: number, y: number, fill?: boolean) => this.svg.xygl(x, y, fill);
+	y_get = (st: number, up: boolean, x: number, w: number) => this.deco.y_get(st, up, x, w)
+	y_set = (st: number, up: boolean, x: number, w: number, y: number) => this.deco.y_set(st, up, x, w, y)
+
 }
 
 // Helper class for scanning (inner class in original)
@@ -401,3 +453,4 @@ export class ScanBuf {
 		return val;
 	}
 }
+export const nil = '0';

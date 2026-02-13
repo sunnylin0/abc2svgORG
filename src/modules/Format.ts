@@ -1,25 +1,27 @@
 // abc2svg - Format module
-import type { Abc } from '../Abc';
+import { Abc, nil } from '../Abc';
+import * as abc2svg from '../abc2svg';
 import { C } from '../abc2svg';
+import { Amusic, Aparser, Adeco, Adraw, Asvg, Asubs, Atune, Aformat, Afront, Alyrics, Agchord } from '../Store';
 import { musicfont } from './font';
+let abc: Abc;
 export class Format {
-	abc: Abc;
+	font_scale_tb: any = {};
+	constructor(abc_: Abc) {
+		abc = abc_;
 
-	constructor(abc: Abc) {
-		this.abc = abc;
-
-		this.abc.cfmt = this.initFormat();
+		abc.cfmt = this.initFormat();
 	}
 	initFormat() {
-		let font_scale_tb = {
+		this.font_scale_tb = {
 			serif: 1,
 			serifBold: 1,
 			'sans-serif': 1,
 			'sans-serifBold': 1,
 			Palatino: 1.1,
 			monospace: 1,
-		},
-			txt_ff = 'text,serif', // text font-family (serif for compatibility)
+		};
+		let txt_ff = 'text,serif', // text font-family (serif for compatibility)
 			ff = {}, // font-face's from %%beginsvg
 			fmt_lock = {};
 
@@ -132,7 +134,7 @@ export class Format {
 		};
 	}
 	get_bool(param) {
-		return !param || !/^(0|n|f)/i.test(param); // accept void as true !
+		return !param || !/^(0|n|f)/i.test(param) // accept void as true !
 	}
 
 	// %%font <font> [<encoding>] [<scale>]
@@ -145,15 +147,15 @@ export class Format {
 		var scale = +a[a.length - 1];
 
 		if (isNaN(scale) || scale <= 0.5) {
-			syntax(1, 'Bad scale value in %%font');
+			abc.syntax(1, 'Bad scale value in %%font');
 			return;
 		}
-		font_scale_tb[a[0]] = scale;
+		this.font_scale_tb[a[0]] = scale;
 	}
 
 	// set the width factor of a font
 	set_font_fac(font) {
-		var scale = font_scale_tb[font.fname || font.name];
+		var scale = this.font_scale_tb[font.fname || font.name];
 
 		if (!scale) scale = 1.1;
 		font.swfac = font.size * scale;
@@ -211,7 +213,7 @@ export class Format {
 						font.wadj = 'spacingAndGlyphs';
 						break;
 					default:
-						syntax(1, errs.bad_val, '%%' + xxxfont);
+						abc.syntax(1, errs.bad_val, '%%' + xxxfont);
 						break;
 				}
 			p = p.replace(a[0], a[2]);
@@ -231,7 +233,7 @@ export class Format {
 		) {
 			n = p.indexOf(')', 1);
 			if (n < 0) {
-				syntax(1, 'No end of url in font family');
+				abc.syntax(1, 'No end of url in font family');
 				return;
 			}
 
@@ -278,17 +280,17 @@ export class Format {
 				.replace(/Times-Roman|Times/, 'serif')
 				.replace('Helvetica', 'sans-serif')
 				.replace('Courier', 'monospace')
-				.replace('music', cfmt.musicfont.name);
+				.replace('music', abc.cfmt.musicfont.name);
 			//hack: the font "Figurato" is used for figured bass
 			if (p.indexOf('Fig') > 0) font.figb = true;
 		}
 		if (p && !font.name) font.name = p;
 
-		if (font.size) set_font_fac(font);
+		if (font.size) this.set_font_fac(font);
 
 		// keep the previous attributes if no font name or no size
 		if (!font.name || !font.size) {
-			ft2 = cfmt[xxxfont];
+			ft2 = abc.cfmt[xxxfont];
 			for (k in ft2) {
 				if (!ft2.hasOwnProperty(k) || font[k] != undefined) continue;
 				switch (k) {
@@ -305,13 +307,13 @@ export class Format {
 						break;
 				}
 			}
-			if (!font.swfac) set_font_fac(font);
+			if (!font.swfac) this.set_font_fac(font);
 		}
 		if (font.pad == undefined) font.pad = 0;
 		font.fname = font.name;
 		if (font.weight >= 700) font.fname += 'Bold';
 
-		cfmt[xxxfont] = font;
+		abc.cfmt[xxxfont] = font;
 	}
 	// get a length with a unit - return the number of pixels
 	get_unit(param: string): number {
@@ -336,7 +338,7 @@ export class Format {
 	// set the name of an info or a part
 	set_infoname(cmd, param) {
 		//fixme: check syntax: '<letter> ["string"]'
-		var tmp = cfmt[cmd] ? cfmt[cmd].split('\n') : '',
+		var tmp = abc.cfmt[cmd] ? abc.cfmt[cmd].split('\n') : '',
 			letter = param[0];
 
 		for (var i = 0; i < tmp.length; i++) {
@@ -344,11 +346,11 @@ export class Format {
 			if (infoname[0] != letter) continue;
 			if (param.length == 1) tmp.splice(i, 1);
 			else tmp[i] = param;
-			cfmt[cmd] = tmp.join('\n');
+			abc.cfmt[cmd] = tmp.join('\n');
 			return;
 		}
-		if (cfmt[cmd]) cfmt[cmd] += '\n' + param;
-		else cfmt[cmd] = param;
+		if (abc.cfmt[cmd]) abc.cfmt[cmd] += '\n' + param;
+		else abc.cfmt[cmd] = param;
 	}
 	// get the text option
 	textopt = {
@@ -392,7 +394,7 @@ export class Format {
 		// keyword, value
 		k = k.slice(0, 3);
 		if (k == 'ste') k = 'stm';
-		set_v_param('pos', '"' + k + ' ' + v + '"');
+		this.set_v_param('pos', '"' + k + ' ' + v + '"');
 	}
 
 	// set/unset the fields to write
@@ -406,14 +408,14 @@ export class Format {
 		if (get_bool(a[1])) {
 			for (i = 0; i < a[0].length; i++) {	// set
 				c = a[0][i];
-				if (this.abc.cfmt.writefields.indexOf(c) < 0)
-					this.abc.cfmt.writefields += c;
+				if (abc.cfmt.writefields.indexOf(c) < 0)
+					abc.cfmt.writefields += c;
 			}
 		} else {
 			for (i = 0; i < a[0].length; i++) {	// unset
 				c = a[0][i];
-				if (this.abc.cfmt.writefields.indexOf(c) >= 0)
-					this.abc.cfmt.writefields = this.abc.cfmt.writefields.replace(c, '');
+				if (abc.cfmt.writefields.indexOf(c) >= 0)
+					abc.cfmt.writefields = abc.cfmt.writefields.replace(c, '');
 			}
 		}
 	}
@@ -422,24 +424,24 @@ export class Format {
 	// set a voice specific parameter
 	set_v_param(k, v) {
 		k = [k + '=', v];
-		if (parse.state < 3) memo_kv_parm(curvoice ? curvoice.id : '*', k);
-		else if (curvoice) set_kv_parm(k);
-		else memo_kv_parm('*', k);
+		if (abc.parse.state < 3) Aparser.memo_kv_parm(abc.curvoice ? abc.curvoice.id : '*', k);
+		else if (abc.curvoice) set_kv_parm(k);
+		else Aparser.memo_kv_parm('*', k);
 	}
 
 	set_page() {
-		if (!img.chg) return;
-		img.chg = false;
-		img.lm = cfmt.leftmargin - cfmt.printmargin;
-		if (img.lm < 0) img.lm = 0;
-		img.rm = cfmt.rightmargin - cfmt.printmargin;
-		if (img.rm < 0) img.rm = 0;
-		img.width = cfmt.pagewidth - 2 * cfmt.printmargin;
+		if (!abc.img.chg) return;
+		abc.img.chg = false;
+		abc.img.lm = abc.cfmt.leftmargin - abc.cfmt.printmargin;
+		if (abc.img.lm < 0) abc.img.lm = 0;
+		abc.img.rm = abc.cfmt.rightmargin - abc.cfmt.printmargin;
+		if (abc.img.rm < 0) abc.img.rm = 0;
+		abc.img.width = abc.cfmt.pagewidth - 2 * abc.cfmt.printmargin;
 
 		// must have 100pt at least as the staff width
-		if (img.width - img.lm - img.rm < 100) {
-			error(0, undefined, 'Bad staff width');
-			img.width = img.lm + img.rm + 150;
+		if (abc.img.width - abc.img.lm - abc.img.rm < 100) {
+			abc.error(0, undefined, 'Bad staff width');
+			abc.img.width = abc.img.lm + abc.img.rm + 150;
 		}
 		set_posx();
 	} // set_page()
@@ -451,13 +453,13 @@ export class Format {
 
 		//fixme: should check the type and limits of the parameter values
 		if (/.+font(-[\d])?$/.test(cmd)) {
-			if (cmd == 'soundfont') cfmt.soundfont = param;
+			if (cmd == 'soundfont') abc.cfmt.soundfont = param;
 			else param_set_font(cmd, param);
 			return;
 		}
 
 		// duplicate the global parameters if already used by symbols
-		if (sfmt[cmd] && parse.ufmt) cfmt = Object.create(cfmt);
+		if (sfmt[cmd] && abc.parse.ufmt) cfmt = Object.create(cfmt);
 
 		switch (cmd) {
 			case 'aligncomposer':
@@ -472,7 +474,7 @@ export class Format {
 			case 'systvoices':
 				v = parseInt(param);
 				if (isNaN(v)) {
-					syntax(1, 'Bad integer value');
+					abc.syntax(1, 'Bad integer value');
 					break;
 				}
 				if (cmd == 'systnames') {
@@ -490,14 +492,14 @@ export class Format {
 					}
 					cmd = 'systvoices';
 				}
-				cfmt[cmd] = v;
+				abc.cfmt[cmd] = v;
 				break;
 			case 'abc-version':
 			case 'bgcolor':
 			case 'fgcolor':
 			case 'propagate-accidentals':
 			case 'writeout-accidentals':
-				cfmt[cmd] = param;
+				abc.cfmt[cmd] = param;
 				break;
 			case 'beamslope':
 			case 'breaklimit': // float values
@@ -511,7 +513,7 @@ export class Format {
 			case 'tieheight':
 				f = +param;
 				if (isNaN(f) || !param || f < 0) {
-					syntax(1, errs.bad_val, '%%' + cmd);
+					abc.syntax(1, errs.bad_val, '%%' + cmd);
 					break;
 				}
 				switch (cmd) {
@@ -520,10 +522,10 @@ export class Format {
 					case 'pagescale':
 						if (f < 0.1) f = 0.1; // smallest scale
 						cmd = 'scale';
-						img.chg = true;
+						abc.img.chg = true;
 						break;
 				}
-				cfmt[cmd] = f;
+				abc.cfmt[cmd] = f;
 				break;
 			case 'annotationbox':
 			case 'gchordbox':
@@ -556,7 +558,7 @@ export class Format {
 			case 'titlecaps':
 			case 'titleleft':
 			case 'trimsvg':
-				cfmt[cmd] = get_bool(param);
+				abc.cfmt[cmd] = get_bool(param);
 				break;
 			case 'dblrepbar':
 				param = ':: ' + param;
@@ -564,15 +566,15 @@ export class Format {
 			case 'bardef': // %%bardef oldbar newbar
 				v = param.split(/\s+/);
 				if (v.length != 2) {
-					syntax(1, errs.bad_val, '%%bardef');
+					abc.syntax(1, errs.bad_val, '%%bardef');
 				} else {
-					if (parse.ufmt) cfmt.bardef = Object.create(cfmt.bardef); // new object
-					cfmt.bardef[v[0]] = v[1];
+					if (abc.parse.ufmt) abc.cfmt.bardef = Object.create(abc.cfmt.bardef); // new object
+					abc.cfmt.bardef[v[0]] = v[1];
 				}
 				break;
 			case 'chordalias':
 				v = param.split(/\s+/);
-				if (!v.length) syntax(1, errs.bad_val, '%%chordalias');
+				if (!v.length) abc.syntax(1, errs.bad_val, '%%chordalias');
 				else abc2svg.ch_alias[v[0]] = v[1] || '';
 				break;
 			case 'composerspace':
@@ -591,14 +593,14 @@ export class Format {
 			case 'vocalspace':
 			case 'wordsspace':
 				f = get_unit(param); // normally, unit in points - 72 DPI accepted
-				if (isNaN(f) || f < 0) syntax(1, errs.bad_val, '%%' + cmd);
-				else cfmt[cmd] = f;
+				if (isNaN(f) || f < 0) abc.syntax(1, errs.bad_val, '%%' + cmd);
+				else abc.cfmt[cmd] = f;
 				break;
 			case 'page-format':
 				user.page_format = get_bool(param);
 				break;
 			case 'print-leftmargin': // to remove
-				syntax(0, '$1 is deprecated - use %%printmargin instead', '%%' + cmd);
+				abc.syntax(0, '$1 is deprecated - use %%printmargin instead', '%%' + cmd);
 				cmd = 'printmargin';
 			// fall thru
 			case 'printmargin':
@@ -610,14 +612,14 @@ export class Format {
 				//	case "topmargin":
 				f = get_unit(param); // normally unit in cm or in - 96 DPI
 				if (isNaN(f)) {
-					syntax(1, errs.bad_val, '%%' + cmd);
+					abc.syntax(1, errs.bad_val, '%%' + cmd);
 					break;
 				}
-				cfmt[cmd] = f;
-				img.chg = true;
+				abc.cfmt[cmd] = f;
+				abc.img.chg = true;
 				break;
 			case 'concert-score':
-				if (cfmt.sound != 'play') cfmt.sound = get_bool(param) ? 'concert' : null;
+				if (abc.cfmt.sound != 'play') abc.cfmt.sound = get_bool(param) ? 'concert' : null;
 				break;
 			case 'writefields':
 				set_writefields(param);
@@ -637,22 +639,22 @@ export class Format {
 				get_font_scale(param);
 				break;
 			case 'fullsvg':
-				if (parse.state != 0) {
-					syntax(1, errs.not_in_tune, '%%fullsvg');
+				if (abc.parse.state != 0) {
+					abc.syntax(1, errs.not_in_tune, '%%fullsvg');
 					break;
 				}
 				//fixme: should check only alpha, num and '_' characters
-				cfmt[cmd] = param;
+				abc.cfmt[cmd] = param;
 				break;
 			case 'gracespace':
 				v = param.split(/\s+/);
 				for (i = 0; i < 3; i++)
 					if (isNaN(+v[i])) {
-						syntax(1, errs.bad_val, '%%gracespace');
+						abc.syntax(1, errs.bad_val, '%%gracespace');
 						break;
 					}
-				if (parse.ufmt) cfmt[cmd] = new Float32Array(3);
-				for (i = 0; i < 3; i++) cfmt[cmd][i] = +v[i];
+				if (abc.parse.ufmt) abc.cfmt[cmd] = new Float32Array(3);
+				for (i = 0; i < 3; i++) abc.cfmt[cmd][i] = +v[i];
 				break;
 			case 'tuplets':
 				v = param.split(/\s+/);
@@ -661,8 +663,8 @@ export class Format {
 					// if 'where'
 					f = posval[f]; // translate the keyword
 				if (f) v[3] = f;
-				if (curvoice) curvoice.tup = v;
-				else cfmt[cmd] = v;
+				if (abc.curvoice) abc.curvoice.tup = v;
+				else abc.cfmt[cmd] = v;
 				break;
 			case 'infoname':
 			case 'partname':
@@ -678,56 +680,56 @@ export class Format {
 						f2 = +v[2];
 						if (isNaN(f)) f = 0;
 					} else {
-						f2 = cfmt.spatab[5];
+						f2 = abc.cfmt.spatab[5];
 					}
 				}
 				if (!f) {
-					syntax(1, errs.bad_val, '%%' + cmd);
+					abc.syntax(1, errs.bad_val, '%%' + cmd);
 					break;
 				}
-				cfmt[cmd] = param; // (for dump)
+				abc.cfmt[cmd] = param; // (for dump)
 
 				// in the table 'spatab',
 				// the width of notes is indexed by log2(note_length)
-				cfmt.spatab = new Float32Array(10);
+				abc.cfmt.spatab = new Float32Array(10);
 				i = 5; // index of crotchet
 				do {
-					cfmt.spatab[i] = f2;
+					abc.cfmt.spatab[i] = f2;
 					f2 /= f;
 				} while (--i >= 0);
 				i = 5;
-				f2 = cfmt.spatab[i];
-				for (; ++i < cfmt.spatab.length;) {
+				f2 = abc.cfmt.spatab[i];
+				for (; ++i < abc.cfmt.spatab.length;) {
 					f2 *= f;
-					cfmt.spatab[i] = f2;
+					abc.cfmt.spatab[i] = f2;
 				}
 				break;
 			case 'play':
-				cfmt.sound = 'play'; // without clef
+				abc.cfmt.sound = 'play'; // without clef
 				break;
 			case 'pos':
 				cmd = param.match(/(\w*)\s+(.*)/);
 				if (!cmd || !cmd[2]) {
-					syntax(1, 'Error in %%pos');
+					abc.syntax(1, 'Error in %%pos');
 					break;
 				}
 				if (
 					cmd[1].slice(0, 3) == 'tup' && // special case for %%pos tuplet
-					curvoice
+					abc.curvoice
 				) {
 					// inside tune
-					if (!curvoice.tup) curvoice.tup = cfmt.tuplets;
-					else curvoice.tup = Object.create(curvoice.tup);
+					if (!abc.curvoice.tup) abc.curvoice.tup = abc.cfmt.tuplets;
+					else abc.curvoice.tup = Object.create(abc.curvoice.tup);
 					v = posval[cmd[2]];
 					switch (v) {
 						case C.SL_ABOVE:
-							curvoice.tup[3] = 1;
+							abc.curvoice.tup[3] = 1;
 							break;
 						case C.SL_BELOW:
-							curvoice.tup[3] = 2;
+							abc.curvoice.tup[3] = 2;
 							break;
 						case C.SL_HIDDEN:
-							curvoice.tup[2] = 1;
+							abc.curvoice.tup[2] = 1;
 							break;
 					}
 					break;
@@ -736,29 +738,29 @@ export class Format {
 				set_pos(cmd[1], cmd[2]);
 				break;
 			case 'sounding-score':
-				if (cfmt.sound != 'play')
-					cfmt.sound = get_bool(param) ? 'sounding' : null;
+				if (abc.cfmt.sound != 'play')
+					abc.cfmt.sound = get_bool(param) ? 'sounding' : null;
 				break;
 			case 'staffwidth':
 				v = get_unit(param);
 				if (isNaN(v)) {
-					syntax(1, errs.bad_val, '%%' + cmd);
+					abc.syntax(1, errs.bad_val, '%%' + cmd);
 					break;
 				}
 				if (v < 100) {
-					syntax(1, '%%staffwidth too small');
+					abc.syntax(1, '%%staffwidth too small');
 					break;
 				}
-				v = cfmt.pagewidth - v - cfmt.leftmargin;
+				v = abc.cfmt.pagewidth - v - abc.cfmt.leftmargin;
 				if (v < 2) {
-					syntax(1, '%%staffwidth too big');
+					abc.syntax(1, '%%staffwidth too big');
 					break;
 				}
-				cfmt.rightmargin = v;
-				img.chg = true;
+				abc.cfmt.rightmargin = v;
+				abc.img.chg = true;
 				break;
 			case 'textoption':
-				cfmt[cmd] = get_textopt(param);
+				abc.cfmt[cmd] = get_textopt(param);
 				break;
 			case 'dynalign':
 			case 'quiet':
@@ -770,20 +772,20 @@ export class Format {
 				if (cmd[1] == 't') {
 					// stretchlast
 					if (v < 0 || v > 1) {
-						syntax(1, errs.bad_val, '%%' + cmd);
+						abc.syntax(1, errs.bad_val, '%%' + cmd);
 						break;
 					}
 				}
-				cfmt[cmd] = v;
+				abc.cfmt[cmd] = v;
 				break;
 			case 'combinevoices':
-				syntax(1, '%%combinevoices is deprecated - use %%voicecombine instead');
+				abc.syntax(1, '%%combinevoices is deprecated - use %%voicecombine instead');
 				break;
 			case 'voicemap':
-				set_v_param('map', param);
+				this.set_v_param('map', param);
 				break;
 			case 'voicescale':
-				set_v_param('scale', param);
+				this.set_v_param('scale', param);
 				break;
 			case 'unsizedsvg':
 				if (get_bool(param)) user.imagesize = '';
@@ -792,20 +794,20 @@ export class Format {
 			// deprecated
 			case 'rbdbstop':
 				v = get_bool(param);
-				if (v && cfmt['abc-version'] >= '2.2') cfmt['abc-version'] = '1';
-				else if (!v && cfmt['abc-version'] < '2.2') cfmt['abc-version'] = '2.2';
+				if (v && abc.cfmt['abc-version'] >= '2.2') abc.cfmt['abc-version'] = '1';
+				else if (!v && abc.cfmt['abc-version'] < '2.2') abc.cfmt['abc-version'] = '2.2';
 				break;
 			default: // memorize all global commands
-				if (!parse.state)
+				if (!abc.parse.state)
 					// (needed for modules)
-					cfmt[cmd] = param;
+					abc.cfmt[cmd] = param;
 				break;
 		}
 
 		// check if already a same format
-		if (sfmt[cmd] && parse.ufmt) {
+		if (sfmt[cmd] && abc.parse.ufmt) {
 			// to do...
-			parse.ufmt = false;
+			abc.parse.ufmt = false;
 		}
 	};
 
@@ -822,13 +824,13 @@ export class Format {
 		return r + font.size.toFixed(1) + 'px ' + n;
 	}
 	public style_font(font) {
-		return 'font:' + st_font(font);
+		return 'font:' + this.st_font(font);
 	}
 
 
 	// build a font class
 	font_class(font) {
-		var f = 'f' + font.fid + cfmt.fullsvg;
+		var f = 'f' + font.fid + abc.cfmt.fullsvg;
 		if (font.class) f += ' ' + font.class;
 		if (font.box) f += ' ' + 'box';
 		return f;
@@ -842,7 +844,7 @@ export class Format {
 				// if default font
 				font.fid = abc2svg.font_tb.length;
 				abc2svg.font_tb.push(font);
-				if (!font.swfac) set_font_fac(font);
+				if (!font.swfac) this.set_font_fac(font);
 				if (!font.pad) font.pad = 0;
 			}
 
@@ -857,7 +859,7 @@ export class Format {
 							: sw_tb; // serif
 			}
 			add_fstyle(
-				'.f' + font.fid + (cfmt.fullsvg || '') + '{' + style_font(font) + '}',
+				'.f' + font.fid + (abc.cfmt.fullsvg || '') + '{' + this.style_font(font) + '}',
 			);
 			if (font.src)
 				add_fstyle(
@@ -869,10 +871,10 @@ export class Format {
 					font.src +
 					'}',
 				);
-			if (font == cfmt.musicfont)
+			if (font == abc.cfmt.musicfont)
 				// add more music font style
 				add_fstyle(
-					'.f' + font.fid + (cfmt.fullsvg || '') + ' text,tspan{white-space:pre}',
+					'.f' + font.fid + (abc.cfmt.fullsvg || '') + ' text,tspan{white-space:pre}',
 				);
 			if (ff.text && !ff.used && font.name.indexOf('text') >= 0) {
 				font_style += ff.text; // add font-face's from %%beginsvg
@@ -886,10 +888,10 @@ export class Format {
 		var font, font2, fid, st;
 
 		fn += 'font';
-		font = cfmt[fn];
+		font = abc.cfmt[fn];
 		if (!font) {
-			syntax(1, 'Unknown font $1', fn);
-			return gene.curfont;
+			abc.syntax(1, 'Unknown font $1', fn);
+			return abc.music.gene.curfont;
 		}
 
 		if (!font.name || !font.size) {
@@ -906,7 +908,7 @@ export class Format {
 			if (font.style) font2.style = font.style;
 			if (font.src) font2.src = font.src;
 			if (font.size) font2.size = font.size;
-			st = st_font(font2);
+			st = this.st_font(font2);
 			if (font.class) {
 				font2.class = font.class;
 				st += ' ' + font.class;
@@ -917,7 +919,7 @@ export class Format {
 			font2.fid = font2.used = undefined;
 			font = font2;
 		}
-		use_font(font);
+		this.use_font(font);
 		return font;
 	}
 

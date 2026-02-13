@@ -1,8 +1,8 @@
 // abc2svg - Jianpu module
 import { Abc } from '../src/Abc';
 import * as abc2svg from '../src/abc2svg';
+let abc: Abc;
 export class Jianpu {
-	abc: Abc;
 	static k_tb = ["Cb", "Gb", "Db", "Ab", "Eb", "Bb", "F",
 		"C",
 		"G", "D", "A", "E", "B", "F#", "C#"];
@@ -12,8 +12,8 @@ export class Jianpu {
 	static acc2 = new Int8Array([-2, -1, 3, 1, 2]);
 	static acc_tb = ["\ue264", "\ue260", "", "\ue262", "\ue263", "\ue261"];
 
-	constructor(abc: Abc) {
-		this.abc = abc;
+	constructor(abc_: Abc) {
+		abc = abc_;
 	}
 
 	// don't calculate the beams
@@ -26,7 +26,6 @@ export class Jianpu {
 	// adjust some symbols before the generation
 	output_music(of: Function) {
 		let p_v: any, v,
-			abc = this.abc,
 			C = abc2svg.C,
 			cur_sy = abc.get_cur_sy(),
 			voice_tb = abc.get_voice_tb();
@@ -338,7 +337,6 @@ export class Jianpu {
 	draw_symbols(of: Function, p_voice: any) {
 		let s, s2, g, nl, y,
 			C = abc2svg.C,
-			abc = this.abc,
 			dot = "\ue1e7",
 			anno_a = abc.anno_a,
 			staff_tb = abc.get_staff_tb(),
@@ -585,7 +583,7 @@ export class Jianpu {
 
 	set_fmt(of: Function, cmd: string, param: string) {
 		if (cmd == "jianpu") {
-			this.abc.set_v_param("jianpu", param);
+			abc.set_v_param("jianpu", param);
 			return;
 		}
 		of(cmd, param);
@@ -599,7 +597,7 @@ export class Jianpu {
 		let C = abc2svg.C,
 			s;
 
-		for (s = this.abc.get_tsfirst(); s; s = s.ts_next) {
+		for (s = abc.get_tsfirst(); s; s = s.ts_next) {
 			if (!s.p_v.jianpu)
 				continue;
 			switch (s.type) {
@@ -628,13 +626,13 @@ export class Jianpu {
 
 	set_vp(of: Function, a: any[]) {
 		let i,
-			p_v = this.abc.curvoice;
+			p_v = abc.curvoice;
 
 		for (i = 0; i < a.length; i++) {
 			if (a[i] == "jianpu=") {
-				p_v.jianpu = this.abc.get_bool(a[++i]);
+				p_v.jianpu = abc.get_bool(a[++i]);
 				if (p_v.jianpu)
-					this.abc.set_vp([
+					abc.set_vp([
 						"staffsep=", "20",
 						"sysstaffsep=", "14",
 						"stafflines=", "...",

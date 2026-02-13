@@ -77,6 +77,24 @@ export const C = {
 	PI: 3.141592653589793,
 	IN: 96,		    // resolution 96 PPI
 	CM: 37.8,		// 1 inch = 2.54 centimeter
+
+	// Constants
+	STEM_MIN: 16,	    /* min stem height under beams */
+	STEM_MIN2: 14,	    /* ... for notes with two beams */
+	STEM_MIN3: 12,	    /* ... for notes with three beams */
+	STEM_MIN4: 10,	    /* ... for notes with four beams */
+	STEM_CH_MIN: 14,	/* min stem height for chords under beams */
+	STEM_CH_MIN2: 10,	/* ... for notes with two beams */
+	STEM_CH_MIN3: 9,	/* ... for notes with three beams */
+	STEM_CH_MIN4: 9,	/* ... for notes with four beams */
+	BEAM_DEPTH: 3.2,	/* width of a beam stroke */
+	BEAM_OFFSET: .25,	/* pos of flat beam relative to staff line */
+	BEAM_SHIFT: 5,	    /* shift of second and third beams */
+	BEAM_STUB: 7,	    /* length of stub for flag under beam */
+	SLUR_SLOPE: .7,		/* max slope of a slur */
+	GSTEM: 15,	        /* grace note stem length */
+	GSTEM_XOFF: 2.3		/* x offset for grace note stem */
+
 };
 
 if (typeof window !== 'undefined') {
@@ -198,6 +216,8 @@ export const font_st: { [key: string]: any } = {}	// font style => font_tb index
 export const hdn: { [key: string]: any } = {}
 
 // font weight
+// reference:
+//	https://developer.mozilla.org/en-US/docs/Web/CSS/font-weight
 export const ft_w: { [key: string]: number } = {
 	thin: 100,
 	extralight: 200,
@@ -251,3 +271,6 @@ export function rat(n: number, d: number) {
 // compare pitches
 // This function is used to sort the note pitches
 export function pitcmp(n1: any, n2: any) { return n1.pit - n2.pit }
+
+// hidden <span> created by edit/abcweb/...
+export let el: HTMLSpanElement;
