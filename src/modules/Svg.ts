@@ -114,9 +114,9 @@ export class Svg {
 	/////////////////////////////////////////
 
 	// convert a meter string to a SmuFL encoded string
-	m_gl(s) {
+	m_gl(s: string) {
 		return s.replace(/./g,
-			function (e) {
+			(e) => {
 				var m = this.tgls["mtr" + e]
 				//fixme: !! no m.x nor m.y yet !!
 				//			if (!m.x && !m.y)
@@ -128,9 +128,9 @@ export class Svg {
 			})
 	}
 
-	// mark a glyph as used and add it in <this.defs>
-	def_use(gl) {
-		var i, j, g
+	// mark a glyph as used and add it in <defs>
+	def_use(gl: string) {
+		var i: number, j: number, g: string
 
 		if (this.defined_glyph[gl])
 			return
@@ -149,13 +149,14 @@ export class Svg {
 			i += 13;
 			j = g.indexOf('"', i);
 			def_use(g.slice(i, j))
+			this.def_use(g.slice(i, j))
 		}
 		this.defs += '\n' + g
 	}
 
 	// add abc.user this.defs from %%beginsvg
-	defs_add(text) {
-		var i, j, gl, tag, is,
+	defs_add(text: string) {
+		var i: number, j: number, gl: string, tag: string, is: number,
 			ie = 0
 
 		// remove XML comments
@@ -232,7 +233,7 @@ export class Svg {
 	}
 
 	/* set the color */
-	set_color(color) {
+	set_color(color: string) {
 		if (color == this.stv_g.color)
 			return undefined	// same color
 		var old_color = this.stv_g.color;
@@ -242,8 +243,8 @@ export class Svg {
 	}
 
 	/* -- set the staff scale (only) -- */
-	set_sscale(st) {
-		var new_scale, dy
+	set_sscale(st: number) {
+		var new_scale: number, dy: number
 
 		if (st != this.stv_g.st && this.stv_g.scale != 1)
 			this.stv_g.scale = 1
@@ -261,11 +262,11 @@ export class Svg {
 		this.stv_g.dy = dy;
 		this.stv_g.st = st;
 		this.stv_g.v = -1;
-		set_g()
+		this.set_g()
 	}
 
 	/* -- set the voice or staff scale -- */
-	set_scale(s) {
+	set_scale(s: any) {
 		var new_dy = this.posy,
 			st = abc.staff_tb[s.st].staffscale == 1 ? -1 : s.st,
 			new_scale = s.p_v.scale
@@ -285,7 +286,7 @@ export class Svg {
 	}
 
 	// -- set the staff this.output buffer and scale when delayed this.output
-	set_dscale(st, no_scale) {
+	set_dscale(st: number, no_scale?: boolean) {
 		if (this.output) {
 			if (this.stv_g.started) {	// close the previous sequence
 				this.stv_g.started = false
@@ -311,7 +312,7 @@ export class Svg {
 
 	// update the y offsets of delayed this.output
 	delayed_update() {
-		var st, new_out, text
+		var st: number, new_out: string, text: string
 
 		for (st = 0; st <= abc.nstaff; st++) {
 			if (abc.staff_tb[st].sc_out) {
@@ -330,7 +331,7 @@ export class Svg {
 	}
 
 	// this.output the annotations
-	anno_out(s, t, f) {
+	anno_out(s: any, t: string | undefined, f: Function) {
 		if (s.istart == undefined)
 			return
 		var type = s.type,
@@ -346,10 +347,10 @@ export class Svg {
 			wl + wr + 4, h, s);
 	}
 
-	a_start(s, t) {
+	a_start(s: any, t?: string) {
 		this.anno_out(s, t, abc.user.anno_start)
 	}
-	a_stop(s, t) {
+	a_stop(s: any, t?: string) {
 		this.anno_out(s, t, abc.user.anno_stop)
 	}
 	empty_function() {
@@ -360,9 +361,9 @@ export class Svg {
 
 	// this.output the stop abc.user annotations
 	anno_put() {
-		var s
+		var s: any
 		while (1) {
-			s = anno_a.shift()
+			s = abc.anno_a.shift()
 			if (!s)
 				break
 			switch (s.type) {
@@ -387,7 +388,7 @@ export class Svg {
 		}
 	}
 	// open / close containers
-	g_open(x, y, rot, sx, sy) {
+	g_open(x: number, y: number, rot?: number, sx?: number, sy?: number) {
 		this.glout()
 		this.out_XYAB('<g transform="translate(X,Y', x, y);
 		if (rot)
@@ -469,10 +470,10 @@ export class Svg {
 	}
 	// draw all the helper/ledger lines
 	draw_all_hl() {
-		var st, p_st
+		var st: number, p_st: any
 
-		function hlud(hla, d) {
-			var hl, hll, i, xp, dx2, x2,
+		function hlud(hla: any[], d: number) {
+			var hl: any, hll: any[], i: number, xp: number, dx2: number, x2: number,
 				n = hla.length
 
 			if (!n)
@@ -513,8 +514,8 @@ export class Svg {
 	}
 
 	glout() {
-		var e,
-			v = []
+		var e: any,
+			v: string[] = []
 
 		// this.glyphs (notes, accidentals...)
 		if (this.gla[0].length) {
@@ -554,12 +555,12 @@ export class Svg {
 		this.output += '"/>\n'
 	}
 	// this.output a glyph
-	xygl(x, y, gl) {
+	xygl(x: number, y: number, gl: string) {
 		// (avoid ps<->js loop)
 		//	if (psxygl(x, y, gl))
 		//		return
 		if (this.glyphs[gl]) {
-			def_use(gl)
+			this.def_use(gl)
 			this.out_XYAB('<use x="X" y="Y" xlink:href="#A"/>\n', x, y, gl)
 		} else {
 			var tgl = this.tgls[gl]
@@ -582,7 +583,7 @@ export class Svg {
 	}
 	// - specific functions -
 	// gua gda (acciaccatura)
-	out_acciac(x, y, dx, dy, up) {
+	out_acciac(x: number, y: number, dx: number, dy: number, up: boolean) {
 		if (up) {
 			x -= 1;
 			y += 4
@@ -594,7 +595,7 @@ export class Svg {
 			x, y, dx, -dy)
 	}
 	// staff system brace
-	out_brace(x, y, h) {
+	out_brace(x: number, y: number, h: number) {
 		//fixme: '-6' depends on the scale
 		x += this.posx - 6;
 		y = this.posy - y;
@@ -605,7 +606,7 @@ export class Svg {
 			')">' + this.tgls.brace.c + '</text>\n'
 	}
 	// staff system bracket
-	out_bracket(x, y, h) {
+	out_bracket(x: number, y: number, h: number) {
 		x += this.posx - 5;
 		y = this.posy - y - 3;
 		h += 2;
@@ -615,8 +616,8 @@ export class Svg {
     c5 0 8.5 4.5 8.5 5.5c0 1 -1.5 -4.5 -12 -3.5"/>\n'
 	}
 	// hyphen
-	out_hyph(x, y, w) {
-		var n, a_y,
+	out_hyph(x: number, y: number, w: number) {
+		var n: number, a_y: number,
 			d = 25 + ((w / 20) | 0) * 3
 
 		if (w > 15.)
@@ -631,10 +632,10 @@ export class Svg {
 			Math.round((d - 5) / this.stv_g.scale), d * n + 5)
 	}
 	// stem [and flags]
-	out_stem(x, y, h, grace,
-		nflags, straight) {	// optional
+	out_stem(x: number, y: number, h: number, grace: boolean,
+		nflags: number, straight: boolean) {	// optional
 		//fixme: dx KO with half note or longa
-		var dx = grace ? GSTEM_XOFF : 3.5,
+		var dx = grace ? C.GSTEM_XOFF : 3.5,
 			slen = -h
 
 		if (h < 0)
@@ -652,7 +653,7 @@ export class Svg {
 		if (h > 0) {				// up
 			if (!straight) {
 				if (!grace) {
-					xygl(x, y, "flu" + nflags)
+					this.xygl(x, y, "flu" + nflags)
 					return
 				} else {		// grace
 					this.output += '<path d="'
@@ -686,7 +687,7 @@ export class Svg {
 		} else {				// down
 			if (!straight) {
 				if (!grace) {
-					xygl(x, y, "fld" + nflags)
+					this.xygl(x, y, "fld" + nflags)
 					return
 				} else {		// grace
 					this.output += '<path d="'
@@ -717,7 +718,7 @@ export class Svg {
 		this.output += '"/>\n'
 	}
 	// tremolo
-	out_trem(x, y, ntrem) {
+	out_trem(x: number, y: number, ntrem: number) {
 		this.out_XYAB('<path d="mX Y\n\t', x - 4.5, y)
 		while (1) {
 			this.output += 'l9 -3v3l-9 3z'
@@ -728,20 +729,20 @@ export class Svg {
 		this.output += '"/>\n'
 	}
 	// tuplet bracket - the staves are not defined
-	out_tubr(x, y, dx, dy, up) {
+	out_tubr(x: number, y: number, dx: number, dy: number, up: boolean) {
 		var h = up ? -3 : 3;
 
 		y += h;
 		dx /= this.stv_g.scale;
 		this.output += '<path class="stroke" d="m';
-		out_sxsy(x, ' ', y);
+		this.out_sxsy(x, ' ', y);
 		this.output += 'v' + h.toFixed(1) +
 			'l' + dx.toFixed(1) + ' ' + (-dy).toFixed(1) +
 			'v' + (-h).toFixed(1) + '"/>\n'
 	}
 	// tuplet bracket with number - the staves are not defined
-	out_tubrn(x, y, dx, dy, up, str) {
-		var dxx,
+	out_tubrn(x: number, y: number, dx: number, dy: number, up: boolean, str: string) {
+		var dxx: number,
 			sw = str.length * 10,
 			h = up ? -3 : 3;
 
@@ -752,7 +753,7 @@ export class Svg {
 		if (!up)
 			y += 6;
 		this.output += '<path class="stroke" d="m';
-		out_sxsy(x, ' ', y);
+		this.out_sxsy(x, ' ', y);
 		dxx = dx - sw + 1
 		if (dy > 0)
 			sw += dy / 8
@@ -764,22 +765,22 @@ export class Svg {
 			'<path class="stroke" stroke-dasharray="' +
 			(dxx / 2).toFixed(1) + ' ' + sw.toFixed(1) +
 			'" d="m';
-		out_sxsy(x, ' ', y - h);
+		this.out_sxsy(x, ' ', y - h);
 		this.output += 'l' + dx.toFixed(1) + ' ' + (-dy).toFixed(1) + '"/>\n'
 
 	}
 	// underscore line
-	out_wln(x, y, w) {
+	out_wln(x: number, y: number, w: number) {
 		this.out_XYAB('<path class="stroke" stroke-width="0.8" d="mX YhF"/>\n',
 			x, y + 1, w)
 	}
 
-	out_deco_str(x, y, de) {
+	out_deco_str(x: number, y: number, de: any) {
 		var name = de.dd.glyph			// class
 
 		if (name == 'fng') {
 			this.out_XYAB('\
-<text x="X" y="Y" this.style="font-size:14px">A</text>\n',
+<text x="X" y="Y" style="font-size:14px">A</text>\n',
 				x - 2, y + 1, m_gl(de.dd.str))
 			return
 		}
@@ -792,10 +793,10 @@ export class Svg {
 		}
 
 		var f,
-			a_deco = deco_str_style[name]
+			a_deco = this.deco_str_style[name]
 
 		if (!a_deco)
-			a_deco = deco_str_style.crdc	// default this.style
+			a_deco = this.deco_str_style.crdc	// default this.style
 		else if (a_deco.style)
 			this.style += "\n." + name + "{" + a_deco.style + "}",
 				delete a_deco.style
@@ -808,17 +809,17 @@ export class Svg {
 		this.output += '</text>\n'
 	}
 
-	out_arp(x, y, val) {
+	out_arp(x: number, y: number, val: number) {
 		this.g_open(x, y, 270);
 		x = 0;
 		val = Math.ceil(val / 6)
 		while (--val >= 0) {
-			xygl(x, 6, "ltr");
+			this.xygl(x, 6, "ltr");
 			x += 6
 		}
 		this.g_close()
 	}
-	out_cresc(x, y, val, defl) {
+	out_cresc(x: number, y: number, val: number, defl: any) {
 		x += val * this.stv_g.scale
 		val = -val;
 		this.out_XYAB('<path class="stroke"\n\
@@ -829,7 +830,7 @@ export class Svg {
 			this.output += '-4l' + (-val).toFixed(1) + ' -4"/>\n'
 
 	}
-	out_dim(x, y, val, defl) {
+	out_dim(x: number, y: number, val: number, defl: any) {
 		this.out_XYAB('<path class="stroke"\n\
     d="mX YlF ', x, y, val)
 		if (defl.noen)
@@ -837,21 +838,21 @@ export class Svg {
 		else
 			this.output += '-4l' + (-val).toFixed(1) + ' -4"/>\n'
 	}
-	out_ltr(x, y, val) {
+	out_ltr(x: number, y: number, val: number) {
 		y += 4;
 		val = Math.ceil(val / 6)
 		while (--val >= 0) {
-			xygl(x, y, "ltr");
+			this.xygl(x, y, "ltr");
 			x += 6
 		}
 	}
-	public this.out_lped(x, y, val, defl) {
+	public out_lped(x: number, y: number, val: number, defl: any) {
 		if (!defl.nost)
-			xygl(x, y, "ped");
+			this.xygl(x, y, "ped");
 		if (!defl.noen)
-			xygl(x + val + 6, y, "pedoff")
+			this.xygl(x + val + 6, y, "pedoff")
 	}
-	out_8va(x, y, val, defl) {
+	out_8va(x: number, y: number, val: number, defl: any) {
 		if (val < 18) {
 			val = 18
 			x -= 4
@@ -859,7 +860,7 @@ export class Svg {
 		if (!defl.nost) {
 			this.out_XYAB('<text x="X" y="Y" \
 this.style="font:italic bold 12px text,serif">8\
-<tspan dy="-4" this.style="font-size:10px">va</tspan></text>\n',
+<tspan dy="-4" style="font-size:10px">va</tspan></text>\n',
 				x - 8, y);
 			x += 12;
 			val -= 12
@@ -870,7 +871,7 @@ this.style="font:italic bold 12px text,serif">8\
 		if (!defl.noen)
 			this.out_XYAB('<path class="stroke" d="mX Yv6"/>\n', x + val, y)
 	}
-	out_8vb(x, y, val, defl) {
+	out_8vb(x: number, y: number, val: number, defl: any) {
 		if (val < 18) {
 			val = 18
 			x -= 4
@@ -878,7 +879,7 @@ this.style="font:italic bold 12px text,serif">8\
 		if (!defl.nost) {
 			this.out_XYAB('<text x="X" y="Y" \
 this.style="font:italic bold 12px text,serif">8\
-<tspan dy=".5" this.style="font-size:10px">vb</tspan></text>\n',
+<tspan dy=".5" style="font-size:10px">vb</tspan></text>\n',
 				x - 8, y);
 			x += 10
 			val -= 10
@@ -889,7 +890,7 @@ this.style="font:italic bold 12px text,serif">8\
 		if (!defl.noen)
 			this.out_XYAB('<path class="stroke" d="mX Yv-6"/>\n', x + val, y)
 	}
-	out_15ma(x, y, val, defl) {
+	out_15ma(x: number, y: number, val: number, defl: any) {
 		if (val < 25) {
 			val = 25
 			x -= 6
@@ -897,7 +898,7 @@ this.style="font:italic bold 12px text,serif">8\
 		if (!defl.nost) {
 			this.out_XYAB('<text x="X" y="Y" \
 this.style="font:italic bold 12px text,serif">15\
-<tspan dy="-4" this.style="font-size:10px">ma</tspan></text>\n',
+<tspan dy="-4" style="font-size:10px">ma</tspan></text>\n',
 				x - 10, y);
 			x += 20;
 			val -= 20
@@ -908,7 +909,7 @@ this.style="font:italic bold 12px text,serif">15\
 		if (!defl.noen)
 			this.out_XYAB('<path class="stroke" d="mX Yv6"/>\n', x + val, y)
 	}
-	out_15mb(x, y, val, defl) {
+	out_15mb(x: number, y: number, val: number, defl: any) {
 		if (val < 24) {
 			val = 24
 			x -= 5
@@ -916,7 +917,7 @@ this.style="font:italic bold 12px text,serif">15\
 		if (!defl.nost) {
 			this.out_XYAB('<text x="X" y="Y" \
 this.style="font:italic bold 12px text,serif">15\
-<tspan dy=".5" this.style="font-size:10px">mb</tspan></text>\n',
+<tspan dy=".5" style="font-size:10px">mb</tspan></text>\n',
 				x - 10, y);
 			x += 18
 			val -= 18
@@ -928,20 +929,20 @@ this.style="font:italic bold 12px text,serif">15\
 			this.out_XYAB('<path class="stroke" d="mX Yv-6"/>\n', x + val, y)
 	}
 
-	out_deco_val(x, y, name, val, defl) {
+	out_deco_val(x: number, y: number, name: string, val: number, defl: any) {
 		if (Asvg.deco_val_tb[name])
 			Asvg.deco_val_tb[name](x, y, val, defl)
 		else
 			abc.error(1, null, "No function for decoration '$1'", name)
 	}
 
-	out_glisq(x2, y2, de) {
-		var ar, a, len,
+	out_glisq(x2: number, y2: number, de: any) {
+		var ar: number, a: number, len: number,
 			de1 = de.start,
 			x1 = de1.x,
 			y1 = de1.y + abc.staff_tb[de1.st].y,
 			dx = x2 - x1,
-			dy = self.sh(y1 - y2)
+			dy = this.sh(y1 - y2)
 
 		if (!this.stv_g.g)
 			dx /= this.stv_g.scale
@@ -958,19 +959,19 @@ this.style="font:italic bold 12px text,serif">15\
 		if (len < 1)
 			len = 1
 		while (--len >= 0) {
-			xygl(x1, 0, "ltr");
+			this.xygl(x1, 0, "ltr");
 			x1 += 6
 		}
 		this.g_close()
 	}
 
-	out_gliss(x2, y2, de) {
-		var ar, a, len,
+	out_gliss(x2: number, y2: number, de: any) {
+		var ar: number, a: number, len: number,
 			de1 = de.start,
 			x1 = de1.x,
 			y1 = de1.y + abc.staff_tb[de1.st].y,
 			dx = x2 - x1,
-			dy = self.sh(y1 - y2)
+			dy = this.sh(y1 - y2)
 
 		if (!this.stv_g.g)
 			dx /= this.stv_g.scale
@@ -987,7 +988,7 @@ this.style="font:italic bold 12px text,serif">15\
 		this.g_close()
 	}
 
-	out_deco_long(x, y, de) {
+	out_deco_long(x: number, y: number, de: any) {
 		var s, p_v, m, nt, i,
 			name = de.dd.glyph,
 			de1 = de.start
@@ -1040,7 +1041,7 @@ this.style="font:italic bold 12px text,serif">15\
 		this.deco_l_tb[name](x, y, de)
 	}
 	// add a tempo note in 'str' and return its number of characters
-	tempo_note(str, s, dur, dy) {
+	tempo_note(str: string[], s: any, dur: any, dy: string) {
 		var p,
 			elts = abc.identify_note(s, dur)
 
@@ -1067,7 +1068,7 @@ this.style="font:italic bold 12px text,serif">15\
 		}
 		str.push('<tspan\nclass="' +
 			abc.font_class(abc.cfmt.musicfont) +
-			'" this.style="font-size:' +
+			'" style="font-size:' +
 			(abc.gene.curfont.size * 1.3).toFixed(1) + 'px"' +
 			dy + '>' +
 			p + '</tspan>'
@@ -1075,7 +1076,7 @@ this.style="font:italic bold 12px text,serif">15\
 		return elts[1] ? 2 : 1
 	}
 	// build the tempo string
-	tempo_build(s) {
+	tempo_build(s: any) {
 		var i, j, bx, p, wh, dy, h,
 			w = 0,
 			str = []
@@ -1132,7 +1133,7 @@ this.style="font:italic bold 12px text,serif">15\
 		s.tempo_wh = [w, h]
 	}
 	// this.output a tempo
-	writempo(s, x, y) {
+	writempo(s: any, x: number, y: number) {
 		var bh
 
 		abc.set_font("tempo")
@@ -1145,13 +1146,13 @@ this.style="font:italic bold 12px text,serif">15\
 		//fixme: then there cannot be font changes by "$n" in the Q: texts
 		this.output += '<text class="' + abc.font_class(abc.gene.curfont) +
 			'" x="'
-		out_sxsy(x, '" y="', y + abc.gene.curfont.size * .22)
+		this.out_sxsy(x, '" y="', y + abc.gene.curfont.size * .22)
 		this.output += '">' + s.tempo_str + '</text>\n'
 
 		if (bh) {
 			abc.gene.curfont.box = true
 			this.output += '<rect class="stroke" x="'
-			out_sxsy(x - 2, '" y="', y + bh - 1)
+			this.out_sxsy(x - 2, '" y="', y + bh - 1)
 			this.output += '" width="' + (s.tempo_wh[0] + 4).toFixed(1) +
 				'" height="' + bh.toFixed(1) +
 				'"/>\n'
@@ -1161,7 +1162,7 @@ this.style="font:italic bold 12px text,serif">15\
 		s.invis = true
 	}
 	// update the vertical offset
-	vskip(h) {
+	vskip(h: number) {
 		this.posy += h
 	}
 	// clear the styles
@@ -1170,8 +1171,8 @@ this.style="font:italic bold 12px text,serif">15\
 		if (abc.cfmt.fullsvg) {
 			this.defined_glyph = {}
 			for (var i = 0; i < abc2svg.font_tb.length; i++)
-				abc2svg.font_tb[i].used = 0 //false
-			ff.used = 0 //false		// clear the font-face
+				abc2svg.font_tb[i].used = false
+			if (Aformat.ff) Aformat.ff.used = false		// clear the font-face
 		} else {
 			this.style =
 				this.fulldefs = ''
@@ -1179,11 +1180,11 @@ this.style="font:italic bold 12px text,serif">15\
 	}
 	// create the SVG image of the block
 	svg_flush() {
-		if (multicol || !abc.user.img_out || this.posy == 0)
+		if (abc.parser.multicol || !abc.user.img_out || this.posy == 0)
 			return
 
 		var i, font,
-			fmt = abc.tsnext ? abc.tsnext.fmt : abc.cfmt,
+			fmt = Amusic.tsnext ? Amusic.tsnext.fmt : abc.cfmt,
 			w = Math.ceil((fmt.trimsvg || fmt.singleline == 1)
 				? (abc.cfmt.leftmargin + this.img.wx * abc.cfmt.scale + abc.cfmt.rightmargin + 2)
 				: this.img.width),
@@ -1192,7 +1193,7 @@ this.style="font:italic bold 12px text,serif">15\
     fill="currentColor" stroke-width=".7"',
 			g = ''
 
-		glout()
+		this.glout()
 
 		if (abc.cfmt.fgcolor)
 			head += ' color="' + abc.cfmt.fgcolor + '"'
@@ -1214,10 +1215,10 @@ this.style="font:italic bold 12px text,serif">15\
 				+ abc.cfmt.bgcolor + '"/>\n'
 
 		if (this.style || this.font_style)
-			head += '<this.style>' + this.font_style + this.style + '\n</this.style>\n'
+			head += '<style>' + this.font_style + this.style + '\n</style>\n'
 
 		if (this.defs)
-			head += '<this.defs>' + this.defs + '\n</this.defs>\n'
+			head += '<defs>' + this.defs + '\n</defs>\n'
 
 		// if %%pagescale != 1, do a global scale
 		// (with a container: transform scale in <svg> does not work
@@ -1225,7 +1226,8 @@ this.style="font:italic bold 12px text,serif">15\
 		// the class is used to know that the container is global
 		if (abc.cfmt.scale != 1) {
 			head += '<g class="g" transform="scale(' +
-				g = '</g>\n'
+				abc.cfmt.scale + ')">\n';
+			g = '</g>\n'
 		}
 
 		if (abc.psvg)			// if PostScript support
@@ -1247,13 +1249,13 @@ this.style="font:italic bold 12px text,serif">15\
 			abc.user.img_out("</div>")
 		this.output = ""
 
-		clr_sty()
+		this.clr_sty()
 		this.defs = '';
 		this.posy = 0
 		this.img.wx = 0			// space used between the margins
 	}
 	blk_flush() {
-		svg_flush();
+		this.svg_flush();
 		if (this.blkdiv < 0 && !abc.parse.state) {
 			if (abc.user.img_out) abc.user.img_out('</div>');
 			this.blkdiv = 0;

@@ -1179,7 +1179,7 @@ export class Tune {
 					if (abc.cfmt.fullsvg) {
 						i = s.match(/@font-face[^}]*}/);
 						if (i && i[0].indexOf('text') > 0) {
-							ff.text = '\n' + i[0]; // assume only one @font-face
+							Aformat.ff.text = '\n' + i[0]; // assume only one @font-face
 							s = s.replace(i[0], '');
 						}
 					}

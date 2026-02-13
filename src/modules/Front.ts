@@ -72,7 +72,7 @@ export class Front {
 				case '0':
 				case '2':
 					if (src[i + 1] != '0') break;
-					c2 = oct_acc[src[i + 2]];
+					c2 = this.oct_acc[src[i + 2]];
 					if (c2) {
 						dst += c2;
 						j = i + 3;
@@ -103,7 +103,7 @@ export class Front {
 					j = i + 1;
 					continue;
 				default:
-					c2 = abc_utf[src.slice(i, i + 2)];
+					c2 = this.abc_utf[src.slice(i, i + 2)];
 					if (c2) {
 						dst += c2;
 						j = i + 2;
@@ -187,26 +187,26 @@ export class Front {
 	do_include(fn: string) {
 		var file, parse_sav;
 
-		if (!user.read_file) {
+		if (!abc.user.read_file) {
 			abc.syntax(1, 'No read_file support');
 			return;
 		}
-		if (include > 2) {
+		if (this.include > 2) {
 			abc.syntax(1, 'Too many include levels');
 			return;
 		}
-		file = user.read_file(fn);
+		file = abc.user.read_file(fn);
 		if (!file) {
 			abc.syntax(1, "Cannot read file '$1'", fn);
 			return;
 		}
-		include++;
-		parse_sav = abc.clone(parse);
-		tosvg(fn, file);
+		this.include++;
+		parse_sav = Abc.clone(abc.parse);
+		this.tosvg(fn, file);
 		parse_sav.state = abc.parse.state;
 		parse_sav.ckey = abc.parse.ckey;
-		parse = parse_sav;
-		include--;
+		abc.parse = parse_sav;
+		this.include--;
 	}
 
 	// Main entry point
@@ -216,6 +216,8 @@ export class Front {
 		let parse = abc.parse;
 		let user = abc.user;
 		let sav: any = {};
+		let se: number;
+		let stag: any;
 
 		// internal state for scanning
 		let bol = 0;
@@ -278,7 +280,7 @@ export class Front {
 				t,
 				etag = '';
 
-			if (!se) se = file.indexOf('\n\n', bol); // end of tune
+			if (se === undefined || !se) se = file.indexOf('\n\n', bol); // end of tune
 			if (se < 0) se = eof;
 			if (typeof stag != 'object') {
 				// set the tag after source
@@ -297,34 +299,34 @@ export class Front {
 				}
 				abc.cfmt.show_source = stag = [stag, etag];
 			}
-			t = stag[0].slice(1) + clean_txt(file.slice(bol, se)) + stag[1];
+			t = stag[0].slice(1) + (abc as any).clean_txt(file.slice(bol, se)) + stag[1];
 			if (stag[0][0] == '+' && sav.src) sav.src += t;
 			else sav.src = t;
-		} // set_src()
+		}; // set_src()
 
 
 		const end_tune = () => {
 			abc.parse.bol = bol; // (for multi V:)
-			generate();
+			abc.tune.generate();
 			cfmt = sav.cfmt;
 			info = sav.info;
-			char_tb = sav.char_tb;
-			glovar = sav.glovar;
-			maps = sav.maps;
-			mac = sav.mac;
-			maci = sav.maci;
-			abc.parse.tune_v_opts = null;
-			abc.parse.scores = null;
+			// char_tb = sav.char_tb; // TODO: where is char_tb? Assuming abc.parser
+			// glovar = sav.glovar;
+			// maps = sav.maps;
+			this.mac = sav.mac;
+			this.maci = sav.maci;
+			(abc.parse as any).tune_v_opts = null;
+			(abc.parse as any).scores = null;
 			abc.parse.ufmt = false;
-			delete abc.parse.pq;
-			init_tune();
+			delete (abc.parse as any).pq;
+			abc.tune.init_tune();
 			abc.img.chg = true;
-			set_page();
+			abc.format.set_page();
 			if (abc.cfmt.show_source) {
 				user.img_out('</div>');
 				if (abc.cfmt.show_source[0][0] == 'a') user.img_out(sav.src);
 			}
-		} // end_tune()
+		}; // end_tune()
 
 		// get %%voice
 		const do_voice = (select: string, in_tune: boolean) => {
@@ -333,11 +335,11 @@ export class Front {
 
 			// get the options
 			if (in_tune) {
-				if (!abc.parse.tune_v_opts) abc.parse.tune_v_opts = {};
-				opt = abc.parse.tune_v_opts;
+				if (!(abc.parse as any).tune_v_opts) (abc.parse as any).tune_v_opts = {};
+				opt = (abc.parse as any).tune_v_opts;
 			} else {
-				if (!abc.parse.voice_opts) abc.parse.voice_opts = {};
-				opt = abc.parse.voice_opts;
+				if (!(abc.parse as any).voice_opts) (abc.parse as any).voice_opts = {};
+				opt = (abc.parse as any).voice_opts;
 			}
 			opt[select] = [];
 			while (1) {
@@ -377,20 +379,20 @@ export class Front {
 			i = file.indexOf('\n', i);
 			h = file.slice(abc.parse.bol, i); // tune header
 
-			for (i in abc.parse.tune_opts) {
-				if (!abc.parse.tune_opts.hasOwnProperty(i)) continue;
+			for (i in (abc.parse as any).tune_opts) {
+				if (!(abc.parse as any).tune_opts.hasOwnProperty(i)) continue;
 				if (!new RegExp(i).test(h)) continue;
-				opts = abc.parse.tune_opts[i];
+				opts = (abc.parse as any).tune_opts[i];
 				for (j = 0; j < opts.t_opts.length; j++) {
 					pc = opts.t_opts[j];
 					switch (pc.match(/\S+/)[0]) {
 						case 'score':
 						case 'staves':
-							if (!abc.parse.scores) abc.parse.scores = [];
-							abc.parse.scores.push(pc);
+							if (!(abc.parse as any).scores) (abc.parse as any).scores = [];
+							(abc.parse as any).scores.push(pc);
 							break;
 						default:
-							self.do_pscom(pc);
+							abc.tune.do_pscom(pc);
 							break;
 					}
 				}
@@ -398,9 +400,9 @@ export class Front {
 				if (!opts) continue;
 				for (j in opts) {
 					if (!opts.hasOwnProperty(j)) continue;
-					if (!abc.parse.tune_v_opts) abc.parse.tune_v_opts = {};
-					if (!abc.parse.tune_v_opts[j]) abc.parse.tune_v_opts[j] = opts[j];
-					else abc.parse.tune_v_opts[j] = abc.parse.tune_v_opts[j].concat(opts[j]);
+					if (!(abc.parse as any).tune_v_opts) (abc.parse as any).tune_v_opts = {};
+					if (!(abc.parse as any).tune_v_opts[j]) (abc.parse as any).tune_v_opts[j] = opts[j];
+					else (abc.parse as any).tune_v_opts[j] = (abc.parse as any).tune_v_opts[j].concat(opts[j]);
 				}
 			}
 		} // tune_filter()
@@ -410,9 +412,9 @@ export class Front {
 		// export functions and/or set module hooks
 		if (abc2svg.mhooks) {
 			for (i in abc2svg.mhooks) {
-				if (!modone[i]) {
-					modone[i] = 1; //true
-					abc2svg.mhooks[i](self);
+				if (!this.modone[i]) {
+					this.modone[i] = 1; //true
+					abc2svg.mhooks[i](this);
 				}
 			}
 		}
@@ -467,7 +469,7 @@ export class Front {
 			line0 = file[bol];
 			line1 = file[bol + 1];
 			if ((line0 == 'I' && line1 == ':') || line0 == '%') {
-				if (line0 == '%' && abc.parse.prefix.indexOf(line1) < 0) continue; // comment
+				if (line0 == '%' && (abc.parse as any).prefix.indexOf(line1) < 0) continue; // comment
 
 				// change "%%abc xxxx" to "xxxx"
 				if (
@@ -494,7 +496,7 @@ export class Front {
 				switch (a[1]) {
 					case 'abcm2ps':
 					case 'ss-pref':
-						abc.parse.prefix = a[2]; // may contain a '%'
+						(abc.parse as any).prefix = a[2]; // may contain a '%'
 						continue;
 					case 'abc-include':
 						do_include(uncomment(a[2]));
@@ -511,7 +513,7 @@ export class Front {
 						abc.parse.eol = eof;
 						continue;
 					}
-					self.do_begin_end(
+					abc.tune.do_begin_end(
 						b,
 						uncomment(a[2]),
 						file
@@ -543,7 +545,7 @@ export class Front {
 						continue;
 					case 'select':
 						if (abc.parse.state != 0) {
-							abc.syntax(1, errs.not_in_tune, '%%select');
+							abc.syntax(1, abc.errs.not_in_tune, '%%select');
 							continue;
 						}
 						select = uncomment(a[2]);
@@ -559,21 +561,21 @@ export class Front {
 						continue;
 					case 'tune':
 						if (abc.parse.state != 0) {
-							abc.syntax(1, errs.not_in_tune, '%%tune');
+							abc.syntax(1, abc.errs.not_in_tune, '%%tune');
 							continue;
 						}
 						select = uncomment(a[2]);
 
 						// if void %%tune, free all tune options
 						if (!select) {
-							abc.parse.tune_opts = {};
+							(abc.parse as any).tune_opts = {};
 							continue;
 						}
 
 						if (select == 'end') continue; // end of previous %%tune
 
-						if (!abc.parse.tune_opts) abc.parse.tune_opts = {};
-						abc.parse.tune_opts[select] = opt = {
+						if (!(abc.parse as any).tune_opts) (abc.parse as any).tune_opts = {};
+						(abc.parse as any).tune_opts[select] = opt = {
 							t_opts: [],
 							//						v_opts: {}
 						};
@@ -596,9 +598,9 @@ export class Front {
 							}
 							break;
 						}
-						if (abc.parse.tune_v_opts) {
-							opt.v_opts = abc.parse.tune_v_opts;
-							abc.parse.tune_v_opts = null;
+						if ((abc.parse as any).tune_v_opts) {
+							opt.v_opts = (abc.parse as any).tune_v_opts;
+							(abc.parse as any).tune_v_opts = null;
 						}
 						abc.parse.eol = bol;
 						continue;
@@ -615,10 +617,10 @@ export class Front {
 							continue;
 						}
 
-						do_voice(select);
+						do_voice(select, true);
 						continue;
 				}
-				self.do_pscom(uncomment(text, true));
+				abc.tune.do_pscom(uncomment(text, true));
 				continue;
 			}
 
@@ -627,7 +629,7 @@ export class Front {
 				last_info = undefined;
 				if (abc.parse.state < 2) continue;
 				abc.parse.line.buffer = uncomment(file.slice(bol, eol));
-				if (abc.parse.line.buffer) parse_music_line();
+				if (abc.parse.line.buffer) abc.parser.parse_music_line();
 				continue;
 			}
 
@@ -655,7 +657,7 @@ export class Front {
 			switch (line0) {
 				case 'X': // start of tune
 					if (abc.parse.state != 0) {
-						abc.syntax(1, errs.ignored, line0);
+						abc.syntax(1, abc.errs.ignored, line0);
 						continue;
 					}
 					if (abc.parse.select && !tune_selected()) {
@@ -668,20 +670,20 @@ export class Front {
 
 					sav.cfmt = Abc.clone(cfmt);
 					sav.info = Abc.clone(info, 2); // (level 2 for info.V[])
-					sav.char_tb = Abc.clone(char_tb);
-					sav.glovar = Abc.clone(glovar);
-					sav.maps = Abc.clone(maps, 1);
-					sav.mac = Abc.clone(mac);
-					sav.maci = Abc.clone(maci);
+					sav.char_tb = Abc.clone(abc.parser.char_tb);
+					sav.glovar = Abc.clone((abc.parser as any).glovar);
+					sav.maps = Abc.clone((abc.parser as any).maps, 1);
+					sav.mac = Abc.clone(this.mac);
+					sav.maci = Abc.clone(this.maci);
 					if (abc.cfmt.show_source) {
 						bol -= 2;
-						set_src(abc.cfmt.show_source);
+						set_src(abc.cfmt.show_source); // Assuming set_src handles the type
 						if (abc.cfmt.show_source[0][0] == 'b') user.img_out(sav.src);
 						user.img_out('<div class="source">');
 					}
 					info.X = text;
 					abc.parse.state = 1; // tune header
-					if (abc.parse.tune_opts) tune_filter();
+					if ((abc.parse as any).tune_opts) tune_filter();
 					continue;
 				case 'T':
 					switch (abc.parse.state) {
@@ -689,14 +691,14 @@ export class Front {
 							continue;
 						case 1:
 						case 2:
-							text = trim_title(text, info.T);
+							text = (abc as any).trim_title(text, info.T);
 							if (info.T == undefined)
 								// (keep empty T:)
 								info.T = text;
 							else info.T += '\n' + text;
 							continue;
 					}
-					s = new_block('title');
+					s = abc.parser.new_block('title');
 					s.text = text;
 					continue;
 				case 'K':
@@ -707,7 +709,7 @@ export class Front {
 							info.K = text;
 							break;
 					}
-					do_info(line0, text);
+					abc.parser.do_info(line0, text);
 					continue;
 				case 'W':
 					if (abc.parse.state == 0 || abc.cfmt.writefields.indexOf(line0) < 0) break;
@@ -717,31 +719,31 @@ export class Front {
 
 				case 'm':
 					if (abc.parse.state >= 2) {
-						abc.syntax(1, errs.ignored, line0);
+						abc.syntax(1, abc.errs.ignored, line0);
 						continue;
 					}
 					a = text.match(/(.*?)[= ]+(.*)/);
 					if (!a || !a[2]) {
-						abc.syntax(1, errs.bad_val, 'm:');
+						abc.syntax(1, abc.errs.bad_val, 'm:');
 						continue;
 					}
-					mac[a[1]] = a[2];
-					maci[a[1][0]] = true; // first letter
+					this.mac[a[1]] = a[2];
+					this.maci[a[1][0]] = true; // first letter
 					break;
 
 				// info fields in tune body only
 				case 's':
 					if (abc.parse.state != 3 || abc.cfmt.writefields.indexOf(line0) < 0) break;
-					get_sym(text, txt_add == ' ');
+					(abc as any).get_sym(text, txt_add == ' ');
 					break;
 				case 'w':
 					if (abc.parse.state != 3 || abc.cfmt.writefields.indexOf(line0) < 0) break;
-					get_lyrics(text, txt_add == ' ');
+					(abc as any).get_lyrics(text, txt_add == ' ');
 					break;
 				case '|': // "|:" starts a music line
 					if (abc.parse.state < 2) continue;
 					abc.parse.line.buffer = text;
-					parse_music_line();
+					abc.parser.parse_music_line();
 					continue;
 				default:
 					if ('ABCDFGHNOSZ'.indexOf(line0) >= 0) {
@@ -757,16 +759,16 @@ export class Front {
 					}
 
 					// info field which may be embedded
-					do_info(line0, text);
+					abc.parser.do_info(line0, text);
 					continue;
 			}
 			txt_add = '\n';
 			last_info = line0;
 		}
-		if (include) return;
+		if (this.include) return;
 		if (abc.parse.state == 1) {
 			abc.syntax(1, 'End of file in tune header');
-			get_key('C');
+			abc.tune.get_key('C');
 		}
 		if (abc.parse.state >= 2) end_tune();
 		if (sav.src && abc.cfmt.show_source[0] == '+') {

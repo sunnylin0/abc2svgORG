@@ -5348,7 +5348,7 @@ export class Music {
 
 	// set the left offset the images
 	set_posx() {
-		posx = abc.img.lm / abc.cfmt.scale
+		Asvg.posx = abc.img.lm / abc.cfmt.scale
 	}
 
 	// initialize the start of generation / new music line

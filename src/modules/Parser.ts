@@ -335,7 +335,7 @@ export class Parser {
 
 
 	// create a block symbol in the tune body
-	new_block(subtype) {
+	new_block(subtype: string) {
 		var s = {
 			type: C.BLOCK,
 			subtype: subtype,

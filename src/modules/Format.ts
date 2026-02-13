@@ -7,6 +7,39 @@ import { musicfont } from './font';
 let abc: Abc;
 export class Format {
 	font_scale_tb: any = {};
+	txt_ff: string = "text,serif";		// text font-family (serif for compatibility)
+	ff: { used?: boolean, text?: string } = {};			// font-face's from %%beginsvg
+	fmt_lock = {};
+	sfmt = {
+		bardef: true,
+		barsperstaff: true,
+		beamslope: true,
+		breaklimit: true,
+		bstemdown: true,
+		cancelkey: true,
+		dynalign: true,
+		flatbeams: true,
+		gracespace: true,
+		hyphencont: true,
+		keywarn: true,
+		maxshrink: true,
+		maxstaffsep: true,
+		measrepnb: true,
+		rbmax: true,
+		rbmin: true,
+		shiftunison: true,
+		slurheight: true,
+		squarebreve: true,
+		staffsep: true,
+		systvoices: 1, //true
+		stemheight: true,
+		stretchlast: true,
+		stretchstaff: true,
+		tieheight: true,
+		timewarn: true,
+		trimsvg: 1, //true
+		vocalspace: true
+	} // sfmt
 	constructor(abc_: Abc) {
 		abc = abc_;
 
@@ -21,10 +54,6 @@ export class Format {
 			Palatino: 1.1,
 			monospace: 1,
 		};
-		let txt_ff = 'text,serif', // text font-family (serif for compatibility)
-			ff = {}, // font-face's from %%beginsvg
-			fmt_lock = {};
-
 		return {
 			'abc-version': '1', // default: old version
 			annotationfont: { name: 'text,sans-serif', size: 12 },
@@ -37,29 +66,29 @@ export class Format {
 				'|:': '[|:',
 				'|::': '[|::',
 				'|:::': '[|:::',
+				'::': ':][:',
 				':|': ':|]',
 				'::|': '::|]',
 				':::|': ':::|]',
-				'::': ':][:',
 			},
 			breaklimit: 0.7,
 			breakoneoln: true,
 			cancelkey: true,
-			composerfont: { name: txt_ff, style: 'italic', size: 14 },
+			composerfont: { name: this.txt_ff, style: 'italic', size: 14 },
 			composerspace: 6,
 			//	contbarnb: false,
 			decoerr: true,
 			dynalign: true,
-			footerfont: { name: txt_ff, size: 16 },
+			footerfont: { name: this.txt_ff, size: 16 },
 			fullsvg: '',
 			gchordfont: { name: 'text,sans-serif', size: 12 },
 			gracespace: new Float32Array([6, 8, 11]), // left, inside, right
 			graceslurs: true,
-			headerfont: { name: txt_ff, size: 16 },
-			historyfont: { name: txt_ff, size: 16 },
+			headerfont: { name: this.txt_ff, size: 16 },
+			historyfont: { name: this.txt_ff, size: 16 },
 			hyphencont: true,
 			indent: 0,
-			infofont: { name: txt_ff, style: 'italic', size: 14 },
+			infofont: { name: this.txt_ff, style: 'italic', size: 14 },
 			infoname:
 				'R "Rhythm: "\n\
                 B "Book: "\n\
@@ -77,12 +106,12 @@ export class Format {
 			maxstaffsep: 2000,
 			maxsysstaffsep: 2000,
 			measrepnb: 1,
-			measurefont: { name: txt_ff, style: 'italic', size: 10 },
+			measurefont: { name: this.txt_ff, style: 'italic', size: 10 },
 			measurenb: -1,
 			musicfont: { name: 'music', src: musicfont, size: 24 },
 			musicspace: 6,
 			//	notespacingfactor: "1.3, 38",
-			partsfont: { name: txt_ff, size: 15 },
+			partsfont: { name: this.txt_ff, size: 15 },
 			parskipfac: 0.4,
 			partsspace: 8,
 			//	pageheight: 29.7 * CM,
@@ -92,7 +121,7 @@ export class Format {
 			rightmargin: 1.4 * C.CM,
 			rbmax: 4,
 			rbmin: 2,
-			repeatfont: { name: txt_ff, size: 9 },
+			repeatfont: { name: this.txt_ff, size: 9 },
 			scale: 1,
 			slurheight: 1.0,
 			// spacing table (see "notespacingfactor" and set_space())
@@ -104,17 +133,17 @@ export class Format {
 			stemheight: 21, // one octave
 			stretchlast: 0.25,
 			stretchstaff: true,
-			subtitlefont: { name: txt_ff, size: 16 },
+			subtitlefont: { name: this.txt_ff, size: 16 },
 			subtitlespace: 3,
 			sysstaffsep: 34,
 			systnames: -1, // (for compatibility)
 			systvoices: 3,
-			tempofont: { name: txt_ff, weight: 'bold', size: 12 },
-			textfont: { name: txt_ff, size: 16 },
+			tempofont: { name: this.txt_ff, weight: 'bold', size: 12 },
+			textfont: { name: this.txt_ff, size: 16 },
 			//	textoption: undefined,
 			textspace: 14,
 			tieheight: 1.0,
-			titlefont: { name: txt_ff, size: 20 },
+			titlefont: { name: this.txt_ff, size: 20 },
 			//	titleleft: false,
 			titlespace: 6,
 			titletrim: true,
@@ -122,26 +151,26 @@ export class Format {
 			//	topmargin: .7 * IN,
 			topspace: 22,
 			tuplets: [0, 0, 0, 0],
-			tupletfont: { name: txt_ff, style: 'italic', size: 10 },
-			vocalfont: { name: txt_ff, weight: 'bold', size: 13 },
+			tupletfont: { name: this.txt_ff, style: 'italic', size: 10 },
+			vocalfont: { name: this.txt_ff, weight: 'bold', size: 13 },
 			vocalspace: 10,
-			voicefont: { name: txt_ff, weight: 'bold', size: 13 },
+			voicefont: { name: this.txt_ff, weight: 'bold', size: 13 },
 			//	voicescale: 1,
 			writefields: 'CMOPQsTWw',
-			wordsfont: { name: txt_ff, size: 16 },
+			wordsfont: { name: this.txt_ff, size: 16 },
 			wordsspace: 5,
 			'writeout-accidentals': 'n',
 		};
 	}
-	get_bool(param) {
+	get_bool(param: string) {
 		return !param || !/^(0|n|f)/i.test(param) // accept void as true !
 	}
 
 	// %%font <font> [<encoding>] [<scale>]
-	get_font_scale(param) {
+	get_font_scale(param: string) {
 		var i,
 			font,
-			a = info_split(param); // a[0] = font name
+			a = (abc as any).info_split(param); // a[0] = font name
 
 		if (a.length <= 1) return;
 		var scale = +a[a.length - 1];
@@ -213,7 +242,7 @@ export class Format {
 						font.wadj = 'spacingAndGlyphs';
 						break;
 					default:
-						abc.syntax(1, errs.bad_val, '%%' + xxxfont);
+						abc.syntax(1, abc.errs.bad_val, '%%' + xxxfont);
 						break;
 				}
 			p = p.replace(a[0], a[2]);
@@ -443,23 +472,23 @@ export class Format {
 			abc.error(0, undefined, 'Bad staff width');
 			abc.img.width = abc.img.lm + abc.img.rm + 150;
 		}
-		set_posx();
+		(abc.music as any).set_posx();
 	} // set_page()
 
 	// set a format parameter
 	// (possible hook)
-	public set_format(cmd, param) {
+	public set_format(cmd: string, param: string) {
 		var f, f2, v, i;
 
 		//fixme: should check the type and limits of the parameter values
 		if (/.+font(-[\d])?$/.test(cmd)) {
 			if (cmd == 'soundfont') abc.cfmt.soundfont = param;
-			else param_set_font(cmd, param);
+			else this.param_set_font(cmd, param);
 			return;
 		}
 
 		// duplicate the global parameters if already used by symbols
-		if (sfmt[cmd] && abc.parse.ufmt) cfmt = Object.create(cfmt);
+		if (this.sfmt[cmd] && abc.parse.ufmt) abc.cfmt = Object.create(abc.cfmt);
 
 		switch (cmd) {
 			case 'aligncomposer':
@@ -513,7 +542,7 @@ export class Format {
 			case 'tieheight':
 				f = +param;
 				if (isNaN(f) || !param || f < 0) {
-					abc.syntax(1, errs.bad_val, '%%' + cmd);
+					abc.syntax(1, abc.errs.bad_val, '%%' + cmd);
 					break;
 				}
 				switch (cmd) {
@@ -566,7 +595,7 @@ export class Format {
 			case 'bardef': // %%bardef oldbar newbar
 				v = param.split(/\s+/);
 				if (v.length != 2) {
-					abc.syntax(1, errs.bad_val, '%%bardef');
+					abc.syntax(1, abc.errs.bad_val, '%%bardef');
 				} else {
 					if (abc.parse.ufmt) abc.cfmt.bardef = Object.create(abc.cfmt.bardef); // new object
 					abc.cfmt.bardef[v[0]] = v[1];
@@ -574,7 +603,7 @@ export class Format {
 				break;
 			case 'chordalias':
 				v = param.split(/\s+/);
-				if (!v.length) abc.syntax(1, errs.bad_val, '%%chordalias');
+				if (!v.length) abc.syntax(1, abc.errs.bad_val, '%%chordalias');
 				else abc2svg.ch_alias[v[0]] = v[1] || '';
 				break;
 			case 'composerspace':
@@ -592,8 +621,8 @@ export class Format {
 			case 'topspace':
 			case 'vocalspace':
 			case 'wordsspace':
-				f = get_unit(param); // normally, unit in points - 72 DPI accepted
-				if (isNaN(f) || f < 0) abc.syntax(1, errs.bad_val, '%%' + cmd);
+				f = this.get_unit(param); // normally, unit in points - 72 DPI accepted
+				if (isNaN(f) || f < 0) abc.syntax(1, abc.errs.bad_val, '%%' + cmd);
 				else abc.cfmt[cmd] = f;
 				break;
 			case 'page-format':
@@ -610,9 +639,9 @@ export class Format {
 			case 'pagewidth':
 			case 'rightmargin':
 				//	case "topmargin":
-				f = get_unit(param); // normally unit in cm or in - 96 DPI
+				f = this.get_unit(param); // normally unit in cm or in - 96 DPI
 				if (isNaN(f)) {
-					abc.syntax(1, errs.bad_val, '%%' + cmd);
+					abc.syntax(1, abc.errs.bad_val, '%%' + cmd);
 					break;
 				}
 				abc.cfmt[cmd] = f;
@@ -622,7 +651,8 @@ export class Format {
 				if (abc.cfmt.sound != 'play') abc.cfmt.sound = get_bool(param) ? 'concert' : null;
 				break;
 			case 'writefields':
-				set_writefields(param);
+			case 'writefields':
+				this.set_writefields(param);
 				break;
 			case 'volume':
 				cmd = 'dynamic';
@@ -633,14 +663,14 @@ export class Format {
 			case 'ornament':
 			case 'stemdir':
 			case 'vocal':
-				set_pos(cmd, param);
+				this.set_pos(cmd, param);
 				break;
 			case 'font':
-				get_font_scale(param);
+				this.get_font_scale(param);
 				break;
 			case 'fullsvg':
 				if (abc.parse.state != 0) {
-					abc.syntax(1, errs.not_in_tune, '%%fullsvg');
+					abc.syntax(1, abc.errs.not_in_tune, '%%fullsvg');
 					break;
 				}
 				//fixme: should check only alpha, num and '_' characters
@@ -650,7 +680,7 @@ export class Format {
 				v = param.split(/\s+/);
 				for (i = 0; i < 3; i++)
 					if (isNaN(+v[i])) {
-						abc.syntax(1, errs.bad_val, '%%gracespace');
+						abc.syntax(1, abc.errs.bad_val, '%%gracespace');
 						break;
 					}
 				if (abc.parse.ufmt) abc.cfmt[cmd] = new Float32Array(3);
@@ -684,7 +714,7 @@ export class Format {
 					}
 				}
 				if (!f) {
-					abc.syntax(1, errs.bad_val, '%%' + cmd);
+					abc.syntax(1, abc.errs.bad_val, '%%' + cmd);
 					break;
 				}
 				abc.cfmt[cmd] = param; // (for dump)
@@ -708,19 +738,19 @@ export class Format {
 				abc.cfmt.sound = 'play'; // without clef
 				break;
 			case 'pos':
-				cmd = param.match(/(\w*)\s+(.*)/);
-				if (!cmd || !cmd[2]) {
+				let m = param.match(/(\w*)\s+(.*)/);
+				if (!m || !m[2]) {
 					abc.syntax(1, 'Error in %%pos');
 					break;
 				}
 				if (
-					cmd[1].slice(0, 3) == 'tup' && // special case for %%pos tuplet
+					(m[1] as string).slice(0, 3) == 'tup' && // special case for %%pos tuplet
 					abc.curvoice
 				) {
 					// inside tune
 					if (!abc.curvoice.tup) abc.curvoice.tup = abc.cfmt.tuplets;
 					else abc.curvoice.tup = Object.create(abc.curvoice.tup);
-					v = posval[cmd[2]];
+					v = this.posval[m[2]];
 					switch (v) {
 						case C.SL_ABOVE:
 							abc.curvoice.tup[3] = 1;
@@ -734,17 +764,17 @@ export class Format {
 					}
 					break;
 				}
-				if (cmd[1].slice(0, 3) == 'vol') cmd[1] = 'dyn'; // compatibility
-				set_pos(cmd[1], cmd[2]);
+				if ((m[1] as string).slice(0, 3) == 'vol') m[1] = 'dyn'; // compatibility
+				this.set_pos(m[1], m[2]);
 				break;
 			case 'sounding-score':
 				if (abc.cfmt.sound != 'play')
 					abc.cfmt.sound = get_bool(param) ? 'sounding' : null;
 				break;
 			case 'staffwidth':
-				v = get_unit(param);
+				v = this.get_unit(param);
 				if (isNaN(v)) {
-					abc.syntax(1, errs.bad_val, '%%' + cmd);
+					abc.syntax(1, abc.errs.bad_val, '%%' + cmd);
 					break;
 				}
 				if (v < 100) {
@@ -760,7 +790,7 @@ export class Format {
 				abc.img.chg = true;
 				break;
 			case 'textoption':
-				abc.cfmt[cmd] = get_textopt(param);
+				abc.cfmt[cmd] = this.get_textopt(param);
 				break;
 			case 'dynalign':
 			case 'quiet':
@@ -772,7 +802,7 @@ export class Format {
 				if (cmd[1] == 't') {
 					// stretchlast
 					if (v < 0 || v > 1) {
-						abc.syntax(1, errs.bad_val, '%%' + cmd);
+						abc.syntax(1, abc.errs.bad_val, '%%' + cmd);
 						break;
 					}
 				}
@@ -804,8 +834,9 @@ export class Format {
 				break;
 		}
 
+
 		// check if already a same format
-		if (sfmt[cmd] && abc.parse.ufmt) {
+		if (this.sfmt[cmd] && abc.parse.ufmt) {
 			// to do...
 			abc.parse.ufmt = false;
 		}
@@ -851,34 +882,32 @@ export class Format {
 			// set the pointer to the width of the characters
 			if (!font.cw_tb) {
 				font.cw_tb = !font.name
-					? ssw_tb
+					? Asubs.ssw_tb
 					: font.name.indexOf('ans') > 0
-						? ssw_tb // sans-serif
+						? Asubs.ssw_tb // sans-serif
 						: font.name.indexOf('ono') > 0
-							? mw_tb // monospace
-							: sw_tb; // serif
+							? Asubs.mw_tb // monospace
+							: Asubs.sw_tb; // serif
 			}
-			add_fstyle(
+			Asubs.add_fstyle(
 				'.f' + font.fid + (abc.cfmt.fullsvg || '') + '{' + this.style_font(font) + '}',
 			);
 			if (font.src)
-				add_fstyle(
-					'@font-face{\n\
- font-family:' +
+				Asubs.add_fstyle(
+					'@font-face{\nfont-family:' +
 					font.name +
-					';\n\
- src:' +
+					';\nsrc:' +
 					font.src +
 					'}',
 				);
 			if (font == abc.cfmt.musicfont)
 				// add more music font style
-				add_fstyle(
+				Asubs.add_fstyle(
 					'.f' + font.fid + (abc.cfmt.fullsvg || '') + ' text,tspan{white-space:pre}',
 				);
-			if (ff.text && !ff.used && font.name.indexOf('text') >= 0) {
-				font_style += ff.text; // add font-face's from %%beginsvg
-				ff.used = 1; //true
+			if (this.ff.text && !this.ff.used && font.name.indexOf('text') >= 0) {
+				Asubs.font_style += this.ff.text; // add font-face's from %%beginsvg
+				this.ff.used = true;
 			}
 		}
 	}
@@ -896,7 +925,7 @@ export class Format {
 
 		if (!font.name || !font.size) {
 			// if incomplete user font
-			font2 = Object.create(gene.deffont);
+			font2 = Object.create(abc.gene.deffont);
 			if (font.name) font2.name = font.name;
 			if (font.normal) {
 				if (font2.weight)

@@ -48,6 +48,7 @@ export class Abc {
 		select?: any;
 		score?: any;
 		pq?: any;
+		tp?: any;
 	};
 	tunes: any[]; // first time symbol and voice array per tune for playing
 	psvg: any; // PostScript
@@ -338,7 +339,8 @@ export class Abc {
 	get stv_g() { return this.svg.stv_g; }
 
 	// Abc functions used by the modules
-	a_de = () => this.deco.a_de
+	get a_de() { return this.deco.a_de }
+	set a_de(v: any[]) { this.deco.a_de = v }
 	add_style = (s: string) => { this.svg.style += s };
 
 	clr_sty = () => this.svg.clr_sty;
@@ -348,14 +350,14 @@ export class Abc {
 		this.deco.deco_cnv(s);
 	}
 
-	defs_add = () => this.svg.defs_add;
+	defs_add = (text: string) => this.svg.defs_add(text);
 	dh_put = (nm: string, s: any, nt: any) => {
 		this.parser.a_dcn.push(nm)
 		this.deco.dh_cnv(s, nt)
 	}
 	draw_meter = () => this.draw.draw_meter;
 	draw_note = () => this.draw.draw_note;
-	font_class = () => this.font_class;
+	font_class = () => this.format.font_class;
 	gch_tr1 = () => this.gchord.gch_tr1;
 	get_bool = () => this.format.get_bool;
 	get_cur_sy = () => this.cur_sy;
@@ -365,7 +367,7 @@ export class Abc {
 	// Font delegates
 	get_font = () => this.format.get_font;
 
-	get_font_style = () => this.svg.font_style;
+	get get_font_style() { return this.svg.font_style; }
 	get_glyphs = () => this.svg.glyphs;
 	get_img = () => this.svg.img;
 	get_lwidth = () => this.subs.get_lwidth;
@@ -378,28 +380,28 @@ export class Abc {
 		}
 	};
 	get_parse = () => this.parse
-	get_posy = () => this.svg.posy
-	get_staff_tb = () => this.staff_tb
-	get_top_v = () => this.par_sy.top_voice
+	get get_posy(): number { return this.svg.posy; }
+	get get_staff_tb() { return this.staff_tb; }
+	get_top_v = () => this.tune.par_sy.top_voice
 	get_tsfirst = () => this.tsfirst
-	get_unit = () => this.format.get_unit;
+	get_unit = (param: string): number => this.format.get_unit(param);
 	get_user = () => this.user
 	get_voice_tb = () => this.voice_tb;
 	glout = () => this.svg.glout;
 	//Abc.prototype.info 
 	// Helper to create a new block/symbol
-	new_block = () => this.parser.new_block
-	out_arp = () => this.svg.out_arp;
-	out_deco_str = () => this.svg.out_deco_str;
-	out_deco_val = () => this.svg.out_deco_val;
-	out_ltr = () => this.svg.out_ltr;
+	new_block = (subtype: string) => this.parser.new_block(subtype)
+	out_arp = (x: number, y: number, val: number) => this.svg.out_arp(x, y, val);
+	out_deco_str = (x: number, y: number, de: any) => this.svg.out_deco_str(x, y, de);
+	out_deco_val = (x: number, y: number, name: string, val: number, defl: any) => this.svg.out_deco_val(x, y, name, val, defl);
+	out_ltr = (x: number, y: number, val: number) => this.svg.out_ltr(x, y, val);
 	param_set_font = () => this.format.param_set_font;
 	part_seq = () => this.subs.part_seq
 	psdeco = () => this.svg.empty_function;
 	psxygl = () => this.svg.empty_function;
 	set_cur_sy = (sy) => { this.cur_sy = sy };
 	set_curvoice = (p_v) => { this.curvoice = p_v }
-	set_dscale = () => this.svg.set_dscale;
+	set_dscale = (st: number, no_scale?: boolean) => this.svg.set_dscale(st, no_scale);
 	set_font = () => this.subs.set_font;
 	set_a_gch = (s, a) => { this.gchord.a_gch = a; this.gchord.csan_add(s) }
 	set_hl = () => this.draw.set_hl
@@ -407,9 +409,9 @@ export class Abc {
 	set_page = () => this.format.set_page
 	set_pagef = () => { this.svg.blkdiv = 1 }
 	set_realwidth = (v) => { this.realwidth = v }
-	set_scale = () => this.svg.set_scale
-	set_sscale = () => this.svg.set_sscale
-	set_tsfirst = (s: any) => { this.tsfirst = s };
+	set_scale = (s: Note) => this.svg.set_scale(s)
+	set_sscale = (st: number) => this.svg.set_sscale(st)
+	set_tsfirst = (s: Note) => { this.tsfirst = s };
 	set_v_param = () => this.format.set_v_param;
 	str2svg = () => this.subs.str2svg
 	strwh = () => this.subs.strwh
@@ -425,8 +427,8 @@ export class Abc {
 	unlksym = () => this.music.unlksym
 	use_font = () => this.format.use_font
 	vskip = (h: number) => this.svg.vskip(h)
-	xy_str = (x: number, y: number, str: string) => this.subs.xy_str(x, y, str)
-	xygl = (x: number, y: number, fill?: boolean) => this.svg.xygl(x, y, fill);
+	xy_str = (x: number, y: number, str: string, action?: any, width?: any, param?: any) => this.subs.xy_str(x, y, str, action, width, param)
+	xygl = (x: number, y: number, gl: string) => this.svg.xygl(x, y, gl);
 	y_get = (st: number, up: boolean, x: number, w: number) => this.deco.y_get(st, up, x, w)
 	y_set = (st: number, up: boolean, x: number, w: number, y: number) => this.deco.y_set(st, up, x, w, y)
 

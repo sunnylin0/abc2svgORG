@@ -4,6 +4,17 @@ import * as abc2svg from '../abc2svg';
 import { C } from '../abc2svg';
 import { Amusic, Aparser, Adeco, Adraw, Asvg, Asubs, Atune, Aformat, Afront, Alyrics, Agchord } from '../Store';
 let abc: Abc;
+interface Note {
+	type: number;
+	p_v: any;
+	s_next: any;
+	next: any;
+	prev: any;
+	dur: number;
+	notes: any[];
+	a_dd?: any[];
+	[key: string]: any;
+}
 export class Deco {
 	// Decoration state
 	dd_tb: any = {};
@@ -130,7 +141,22 @@ export class Deco {
 		}
 		return s.multi > 0 || !s.second;
 	}
+	// - of the dynamic and volume marks
+	up6(s: any, pos: number) {
+		switch (pos & 0x07) {
+			case C.SL_ABOVE:
+				return true
+			case C.SL_BELOW:
+				return false
+		}
+		if (s.multi)
+			return s.multi > 0
+		if (!s.p_v.have_ly)
+			return false
 
+		/* above if the lyrics are below the staff */
+		return (s.pos.voc & 0x07) != C.SL_ABOVE
+	}
 	// this.d_arp drawing function
 	d_arp(de: any) {
 		let m, h, dx,
@@ -263,7 +289,7 @@ export class Deco {
 		de.x += xc;
 
 		if (de.y < 0)
-			y_set(s.st, 0, de.x, de.dd.wl, de.y - de.dd.h);
+			this.y_set(s.st, 0, de.x, de.dd.wl, de.y - de.dd.h);
 	}
 
 	d_trill(de: any) {
@@ -281,7 +307,7 @@ export class Deco {
 		// shift the starting point of a long decoration
 		// in the cases "T!trill(!" and "!pp!!<(!"
 		// (side effect on x)
-		function sh_st() {
+		const sh_st = () => {
 			var de3,
 				de2 = de.start, // start of the decoration
 				s = de2.s,
@@ -303,11 +329,11 @@ export class Deco {
 					break;
 				}
 			}
-		} // this.sh_st()
+		}; // this.sh_st()
 
 		// shift the ending point of a long decoration
 		// (side effect on w)
-		function sh_en(tmp?) {
+		const sh_en = (tmp?: any) => {
 			var de3,
 				i = de.ix; // index of the current decoration
 
@@ -328,7 +354,7 @@ export class Deco {
 					break;
 				}
 			}
-		} //this.sh_en()
+		}; //this.sh_en()
 
 		// d_trill()
 		if (de2) {
@@ -388,7 +414,7 @@ export class Deco {
 
 		if (up) y += dd.h;
 		else y -= dd.hd;
-		y_set(st, up, x, w, y);
+		this.y_set(st, up ? 1 : 0, x, w, y);
 		if (up) s.ymx = s2.ymx = y;
 		else s.ymn = s2.ymn = y;
 	}
@@ -534,7 +560,7 @@ export class Deco {
 			return; //undefined
 		}
 		if (c_func > 10 && (c_func < 32 || c_func > 45)) {
-			abc.error(1, null, "%%deco: bad C function index '$1'", c_func);
+			abc.error(1, null, "%%deco: bad C function index '$1'", c_func.toString());
 			return; //undefined
 		}
 		//	if (c_func == 5)			// old !trill(!
@@ -682,10 +708,10 @@ export class Deco {
 
 	/* -- convert the decorations -- */
 	deco_cnv(s: Note, prev?: Note) {
-		var i, j, dd, nm, note, s1, court, fg;
+		var i, j, dd, nm, note, s1: Note, court, fg;
 
 		// mark a finger glissando
-		function sav_fg() {
+		const sav_fg = () => {
 			var i,
 				s1 = prev;
 
@@ -710,10 +736,10 @@ export class Deco {
 				}
 			}
 			return 1;
-		} // this.sav_fg()
+		}; // this.sav_fg()
 
 		while (1) {
-			nm = this.a_dcn.shift();
+			nm = abc.a_dcn.shift();
 			if (!nm) break;
 			dd = this.get_dd(nm);
 			if (!dd) continue;
@@ -754,7 +780,7 @@ export class Deco {
 						if (i[2] == 'b') j = -j;
 						if (!s.ottava) s.ottava = [];
 						s.ottava[i[3] == '(' ? 0 : 1] = j;
-						glovar.ottava = 1; //true
+						Aparser.glovar.ottava = true;
 					}
 					break;
 				case 8: // gliss
@@ -887,7 +913,7 @@ export class Deco {
 						abc.error(1, s, abc.errs.must_note, nm);
 						continue;
 					}
-					do_ctie(nm, s, s.notes[0]); // (only one note for now)
+					this.do_ctie(nm, s, s.notes[0]); // (only one note for now)
 					continue;
 				case 45: // finger glissando
 					fg = 1; //true
@@ -899,7 +925,7 @@ export class Deco {
 			// handle the fingering in case finger glissando
 			if (fg && dd.glyph == 'fng') {
 				fg = 0; //false
-				if (this.sav_fg()) {
+				if (sav_fg()) {
 					abc.error(1, s, '!$1! must be on the last of a couple of notes', nm);
 					continue;
 				}
@@ -911,8 +937,8 @@ export class Deco {
 		}
 		// handle the possible courtesy accidental
 		if (court) {
-			this.a_dcn.push('cacc' + j);
-			dh_cnv(s, s.notes[0]);
+			abc.a_dcn.push('cacc' + j);
+			this.dh_cnv(s, s.notes[0]);
 		}
 	}
 
@@ -922,7 +948,7 @@ export class Deco {
 		var k, nm, dd;
 
 		while (1) {
-			nm = this.a_dcn.shift();
+			nm = abc.a_dcn.shift();
 			if (!nm) break;
 			dd = this.get_dd(nm);
 			if (!dd) continue;
@@ -948,7 +974,7 @@ export class Deco {
 					s.stemless = true;
 					continue;
 				case 44: // this.cross-voice ties
-					do_ctie(nm, s, nt);
+					this.do_ctie(nm, s, nt);
 					continue;
 			}
 
@@ -1054,9 +1080,9 @@ export class Deco {
 			i,
 			str,
 			a,
-			new_de = [],
-			ymid = [];
-		let self = this;
+			new_de: any[] = [],
+			ymid: number[] = [];
+		let self: Deco = this;
 
 		// display a finger glissando
 		function out_fg() {
@@ -1211,29 +1237,29 @@ export class Deco {
 				if (de.cont) new_de.push(de.start); // to be continued next line
 			} else if (
 				dd.str != undefined && // string
-				!tgls[dd.glyph] &&
-				!glyphs[dd.glyph]
+				!Asvg.tgls[dd.glyph] &&
+				!Asvg.glyphs[dd.glyph]
 			) {
 				// with a class
 				if (s.fg)
 					// if finger glissando
 					out_fg(); // (may change y)
-				out_deco_str(
+				Asvg.out_deco_str(
 					x,
 					y, // - dd.h * .2,
 					de,
 				);
 			} else if (de.lden) {
-				out_deco_long(x, y, de);
+				Asvg.out_deco_long(x, y, de);
 			} else {
-				xygl(x, y, f);
+				Asvg.xygl(x, y, f);
 			}
-			if (abc.stv_g.g) abc.svg.g_close();
-			anno_stop(s, 'deco');
+			if (abc.stv_g.g) Asvg.g_close();
+			Asvg.anno_stop(s, 'deco');
 		}
 
 		// keep the long decorations which continue on the next line
-		a_de = new_de;
+		this.a_de = new_de;
 	};
 
 	/* -- create the decorations and define the ones near the notes -- */
@@ -1326,7 +1352,7 @@ export class Deco {
 					s: s,
 					dd: dd,
 					st: s.st,
-					ix: this.a_de.length,
+					ix: abc.a_de.length,
 					defl: {},
 					x: x,
 					y: y,
@@ -1346,10 +1372,10 @@ export class Deco {
 							break;
 						case 3:
 						case 5:
-							up = up3(s, pos);
+							up = this.up3(s, pos);
 							break;
 						case 6:
-							up = up6(s, pos);
+							up = this.up6(s, pos);
 							break;
 					}
 				}
@@ -1522,7 +1548,7 @@ export class Deco {
 					continue;
 				s = de2.s;
 				de = {
-					s: prev_scut(s),
+					s: Adraw.prev_scut(s),
 					st: de2.st,
 					dd: de2.dd.dd_st,
 					ix: this.a_de.length - 1,
@@ -1617,7 +1643,7 @@ export class Deco {
 				if (!s.next) break;
 				if (!first_repeat) {
 					first_repeat = s;
-					set_font('repeat');
+					abc.set_font('repeat');
 				}
 				s1 = s;
 				for (; ;) {
@@ -1652,7 +1678,7 @@ export class Deco {
 			/* draw the repeat indications */
 			s = first_repeat;
 			if (!s) return;
-			set_dscale(p_voice.st, true);
+			Asvg.set_dscale(p_voice.st, true);
 			y2 = y * abc.staff_tb[p_voice.st].staffscale;
 			for (; s; s = s.next) {
 				if (!s.rbstart || s.norepbra) continue;
@@ -1679,7 +1705,7 @@ export class Deco {
 					//				if (s.bar_type == "]")
 					//					s.invis = true
 					//fixme:%%staves: abc.cur_sy moved?
-					if (s1.st > 0 && !(abc.cur_sy.staves[s1.st - 1].flags & STOP_BAR)) w = s.wl;
+					if (s1.st > 0 && !(abc.cur_sy.staves[s1.st - 1].flags & C.STOP_BAR)) w = s.wl;
 					else if (s.bar_type.slice(-1) == ':') w = 12;
 					else if (s.bar_type[0] != ':')
 						//				      || s.bar_type == "]")
@@ -1696,17 +1722,17 @@ export class Deco {
 					!p_voice.bar_start
 				) {
 					// continue on next line
-					p_voice.bar_start = _bar(s);
+					p_voice.bar_start = (abc.music as any)._bar(s);
 					p_voice.bar_start.bar_type = '';
 					p_voice.bar_start.rbstart = 1;
 				}
 				if (s1.text) abc.xy_str(x + 4, y2 - abc.gene.curfont.size, s1.text);
-				xypath(x, y2);
+				abc.xypath(x, y2);
 				if (s1.rbstart == 2) abc.output += 'm0 10v-10';
 				abc.output += 'h' + w.toFixed(1);
 				if (s.rbstop == 2) abc.output += 'v10';
 				abc.output += '"/>\n';
-				y_set(s1.st, true, x, w, y + 2);
+				this.y_set(s1.st, 1, x, w, y + 2);
 
 				if (s.rbstart) s = s.prev;
 			}
@@ -1791,7 +1817,7 @@ export class Deco {
 			}
 			if (de.up) y += dd.h;
 			else y -= dd.hd;
-			y_set(de.st, de.up, de.x, w, y);
+			this.y_set(de.st, de.up ? 1 : 0, de.x, w, y);
 		}
 
 		// second pass for pedal (under the staff)
@@ -1808,10 +1834,10 @@ export class Deco {
 				continue;
 			w = de.val || 10;
 			de.y = abc.y_get(de.st, 0, de.x, w) - (dd.dd_st && abc.cfmt.pedline ? 10 : dd.h);
-			y_set(de.st, 0, de.x, w, de.y); // (no descent)
+			this.y_set(de.st, 0, de.x, w, de.y); // (no descent)
 		}
 
-		draw_all_chsy(); // draw all chord symbols
+		Agchord.draw_all_chsy(); // draw all chord symbols
 
 		/* draw the repeat brackets */
 		for (v = 0; v < abc.voice_tb.length; v++) {
@@ -1840,17 +1866,17 @@ export class Deco {
 			if (sy.st_print[st]) break;
 		}
 		if (st > abc.nstaff) return; /* no visible staff */
-		set_dscale(st);
+		Asvg.set_dscale(st);
 
 		/* leave the measure numbers as unscaled */
 		if (abc.staff_tb[st].staffscale != 1) {
 			font_size = abc.get_font('measure').size;
-			param_set_font(
+			abc.param_set_font(
 				'measurefont',
 				'* ' + (font_size / abc.staff_tb[st].staffscale).toString(),
 			);
 		}
-		set_font('measure');
+		abc.set_font('measure');
 		w0 = abc.cwidf('0'); // (greatest) width of a number
 
 		s = abc.tsfirst; /* clef */
@@ -1860,8 +1886,8 @@ export class Deco {
 				any_nb = true;
 				y = abc.y_get(st, true, 0, 20);
 				if (y < abc.staff_tb[st].topbar + 14) y = abc.staff_tb[st].topbar + 14;
-				xy_str(0, y - abc.gene.curfont.size * 0.2, bar_num.toString());
-				y_set(st, true, 0, 20, y + abc.gene.curfont.size + 2);
+				abc.xy_str(0, y - abc.gene.curfont.size * 0.2, bar_num.toString());
+				this.y_set(st, 1, 0, 20, y + abc.gene.curfont.size + 2);
 			} else if (bar_num % abc.cfmt.measurenb == 0) {
 				for (; ; s = s.ts_next) {
 					switch (s.type) {
@@ -1884,9 +1910,9 @@ export class Deco {
 					y = abc.y_get(st, true, x, w) + 5;
 					if (y < abc.staff_tb[st].topbar + 6) y = abc.staff_tb[st].topbar + 6;
 					y += abc.gene.curfont.pad;
-					xy_str(x, y - abc.gene.curfont.size * 0.2, bar_num.toString());
+					abc.xy_str(x, y - abc.gene.curfont.size * 0.2, bar_num.toString());
 					y += abc.gene.curfont.size + abc.gene.curfont.pad;
-					y_set(st, true, x, w, y);
+					this.y_set(st, 1, x, w, y);
 					//			s.ymx = y
 				}
 			}
@@ -1899,7 +1925,7 @@ export class Deco {
 					for (st = 0; st < abc.nstaff; st++) {
 						if (sy.st_print[st]) break;
 					}
-					set_dscale(st);
+					Asvg.set_dscale(st);
 					continue;
 				default:
 					continue;
@@ -1932,9 +1958,9 @@ export class Deco {
 				}
 			}
 			y += 2 + abc.gene.curfont.pad;
-			xy_str(x, y - abc.gene.curfont.size * 0.2, bar_num.toString());
+			abc.xy_str(x, y - abc.gene.curfont.size * 0.2, bar_num.toString());
 			y += abc.gene.curfont.size + abc.gene.curfont.pad;
-			y_set(st, true, x, w, y);
+			this.y_set(st, 1, x, w, y);
 			//		s.ymx = y
 		}
 		abc.gene.nbar = bar_num;
@@ -1961,7 +1987,7 @@ export class Deco {
 			if (sy.st_print[st]) break;
 		}
 		if (st > abc.nstaff) return; // no visible staff
-		set_dscale(st, 1); // no scale
+		Asvg.set_dscale(st, true); // no scale
 
 		/* get the minimal y offset */
 		var ymin = abc.staff_tb[st].topbar + 2,
@@ -1975,18 +2001,18 @@ export class Deco {
 			if (!s2 || s2.invis) continue;
 			if (!some_part) {
 				some_part = s;
-				set_font('parts');
+				abc.set_font('parts');
 				h = abc.gene.curfont.size + 2 + abc.gene.curfont.pad * 2;
 			}
 			if (s2.x == undefined) s2.x = s.x - 10;
 			p = s2.text;
-			if (abc.cfmt.abc.partname) s2.ntxt = p = abc.partname(p)[2];
+			if (abc.cfmt.partname) s2.ntxt = p = abc.partname(p)[2];
 			w = abc.strwh(p)[0];
 			y = abc.y_get(st, true, s2.x, w + 3);
 			if (ymin < y) ymin = y;
 		}
 		if (some_part) {
-			set_sscale(-1);
+			Asvg.set_sscale(-1);
 			ymin *= abc.staff_tb[st].staffscale;
 			for (s = some_part; s; s = s.ts_next) {
 				s2 = s.part;
@@ -1998,11 +2024,11 @@ export class Deco {
 					s2.wr = w;
 					s2.ymn = ymin;
 					s2.ymx = s2.ymn + h;
-					anno_start(s2);
+					Asvg.anno_start(s2);
 				}
-				xy_str(s2.x, ymin + abc.gene.curfont.pad + abc.gene.curfont.size * 0.22, p);
-				y_set(st, 1, s2.x, w + 3, (ymin + h) / abc.staff_tb[st].staffscale);
-				anno_stop(s2);
+				abc.xy_str(s2.x, ymin + abc.gene.curfont.pad + abc.gene.curfont.size * 0.22, p);
+				this.y_set(st, 1, s2.x, w + 3, (ymin + h) / abc.staff_tb[st].staffscale);
+				Asvg.anno_stop(s2);
 			}
 		}
 
@@ -2021,8 +2047,8 @@ export class Deco {
 			x = s.x - 16 + w;
 		}
 		if (some_tempo) {
-			set_sscale(-1);
-			set_font('tempo');
+			Asvg.set_sscale(-1);
+			abc.set_font('tempo');
 			ymin += 2;
 			ymin *= abc.staff_tb[st].staffscale;
 
@@ -2041,11 +2067,11 @@ export class Deco {
 					s.wr = w - 16;
 					s.ymn = y;
 					s.ymx = s.ymn + 14;
-					anno_start(s);
+					Asvg.anno_start(s);
 				}
-				writempo(s, s.x - 16, y);
-				anno_stop(s);
-				y_set(st, 1, s.x - 16, w, (y + h + 2) / abc.staff_tb[st].staffscale);
+				Asvg.writempo(s, s.x - 16, y);
+				Asvg.anno_stop(s);
+				this.y_set(st, 1, s.x - 16, w, (y + h + 2) / abc.staff_tb[st].staffscale);
 				dosh >>= 1;
 			}
 		}
